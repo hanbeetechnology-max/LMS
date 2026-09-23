@@ -23,7 +23,8 @@ export function ScanToPayCard({
     <div className="rounded-2xl border border-(--color-line) p-5">
       <p className="text-sm font-medium text-(--color-ink)">Scan to pay — {amountLabel}</p>
       <p className="mt-1 text-xs text-(--color-mist)">
-        Scan with any UPI app (GPay, PhonePe, Paytm). We'll confirm your payment before finalizing your spot.
+        Scan with any UPI app (GPay, PhonePe, Paytm). This checkbox is just your confirmation — a staff member
+        manually checks the payment against your name/email before your spot is finalized.
       </p>
       <div className="mt-4 flex justify-center">
         {imgError ? (
