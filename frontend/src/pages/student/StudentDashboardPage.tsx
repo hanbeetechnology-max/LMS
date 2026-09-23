@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Seo } from "../../lib/Seo";
 import { Reveal, StaggerGroup, StaggerItem } from "../../components/ui/Reveal";
 import { CountUp } from "../../components/ui/CountUp";
 import { useAuth } from "../../lib/AuthProvider";
+import { fetchMyTournamentRegistrations, type MyTournamentRegistration } from "../../lib/tournamentApi";
 import {
   AnnouncementIcon,
   AttendanceIcon,
@@ -13,6 +14,11 @@ import {
   SchedulingIcon,
   TrophyIcon,
 } from "../../components/landing/icons";
+
+const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
+  pending_verification: "Registered — payment pending verification",
+  verified: "Registered — payment verified",
+};
 
 interface CourseProgress {
   id: string;
@@ -47,10 +53,16 @@ function greeting() {
 }
 
 export function StudentDashboardPage() {
-  const { profile } = useAuth();
+  const { profile, authSource } = useAuth();
   const firstName = profile?.fullName.split(" ")[0];
 
   const [courses] = useState<CourseProgress[]>(INITIAL_COURSES);
+  const [myRegistration, setMyRegistration] = useState<MyTournamentRegistration | null>(null);
+
+  useEffect(() => {
+    if (authSource !== "supabase") return;
+    fetchMyTournamentRegistrations().then((rows) => setMyRegistration(rows[0] ?? null));
+  }, [authSource]);
 
   return (
     <>
@@ -74,10 +86,16 @@ export function StudentDashboardPage() {
             </span>
             <div>
               <p className="font-display text-base font-semibold text-(--color-ink)">HANBEE RC F1 Tournament</p>
-              <p className="text-sm text-(--color-ink-soft)">Registration is open — see event details and register.</p>
+              <p className="text-sm text-(--color-ink-soft)">
+                {myRegistration
+                  ? (TOURNAMENT_STATUS_LABEL[myRegistration.status] ?? `Registered — ${myRegistration.status}`)
+                  : "Registration is open — see event details and register."}
+              </p>
             </div>
           </div>
-          <span className="shrink-0 text-sm font-semibold text-(--color-amber-deep)">View tournament →</span>
+          <span className="shrink-0 text-sm font-semibold text-(--color-amber-deep)">
+            {myRegistration ? "View details →" : "View tournament →"}
+          </span>
         </Link>
       </Reveal>
 

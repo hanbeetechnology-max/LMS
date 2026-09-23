@@ -8,6 +8,8 @@ import { ScanToPayCard } from "../components/ui/ScanToPayCard";
 import { Logo } from "../components/landing/Logo";
 import { Footer } from "../components/landing/Footer";
 import { registerForTournament } from "../lib/tournamentApi";
+import { useAuth } from "../lib/AuthProvider";
+import { useToast } from "../lib/ToastProvider";
 
 const EVENT = {
   name: "HANBEE RC F1 Championship",
@@ -116,10 +118,11 @@ interface RegistrationFormState {
 }
 
 function RegistrationForm() {
+  const { profile } = useAuth();
+  const { showToast } = useToast();
   const [form, setForm] = useState<RegistrationFormState>({ driverName: "", email: "", phone: "" });
   const [errors, setErrors] = useState<Partial<Record<"driverName" | "email", string>>>({});
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -135,11 +138,10 @@ function RegistrationForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validate()) return;
-    if (!paymentConfirmed) {
-      setPaymentError("Please confirm payment via the QR code before registering.");
-      return;
-    }
-    setPaymentError(null);
+    // Payment is optional for now — not every tournament will collect a
+    // fee yet, so the QR card stays visible (the option to pay is still
+    // there) but no longer blocks submission. The server never trusts
+    // this flag either way (0010's trigger forces it false regardless).
     setSubmitting(true);
     try {
       // Persist the registration when Supabase is configured — a staff
@@ -148,8 +150,9 @@ function RegistrationForm() {
       // If Supabase isn't configured, or the insert fails, still show the
       // success state rather than blocking the user, same fallback
       // behavior used elsewhere in this codebase (coursesApi.ts).
-      await registerForTournament(form.driverName, form.email, form.phone, paymentConfirmed);
+      await registerForTournament(form.driverName, form.email, form.phone, paymentConfirmed, profile?.id);
       setSubmitted(true);
+      showToast("You're registered! We'll be in touch with race-day details.");
     } finally {
       setSubmitting(false);
     }
@@ -202,18 +205,10 @@ function RegistrationForm() {
         onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
       />
       <ScanToPayCard
-        amountLabel="entry fee"
+        amountLabel="entry fee (optional for now)"
         confirmed={paymentConfirmed}
-        onConfirmedChange={(v) => {
-          setPaymentConfirmed(v);
-          if (v) setPaymentError(null);
-        }}
+        onConfirmedChange={setPaymentConfirmed}
       />
-      {paymentError && (
-        <p role="alert" className="text-sm text-(--color-error)">
-          {paymentError}
-        </p>
-      )}
       <button
         type="submit"
         disabled={submitting}

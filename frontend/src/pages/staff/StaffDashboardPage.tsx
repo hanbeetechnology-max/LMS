@@ -5,6 +5,7 @@ import { CountUp } from "../../components/ui/CountUp";
 import { TimeClockWidget } from "../../components/app/TimeClockWidget";
 import { TasksWidget } from "../../components/app/TasksWidget";
 import { AssessmentReviewPanel } from "../../components/app/AssessmentReviewPanel";
+import { TournamentRegistrationsPanel } from "../../components/app/TournamentRegistrationsPanel";
 import { useAuth } from "../../lib/AuthProvider";
 import {
   AnnouncementIcon,
@@ -83,6 +84,7 @@ export function StaffDashboardPage() {
 
       <TimeClockWidget />
       <AssessmentReviewPanel />
+      <TournamentRegistrationsPanel />
 
       <Reveal delay={0.1} className="mt-8 grid grid-cols-2 gap-6 border-b border-(--color-line) pb-8 sm:grid-cols-4">
         {STATS.map(([value, label, to], i) => (

@@ -5,6 +5,7 @@ import { InlineEditText } from "../../components/ui/InlineEditText";
 import { useToast } from "../../lib/ToastProvider";
 import { useAuth } from "../../lib/AuthProvider";
 import { supabase } from "../../lib/supabaseClient";
+import { TournamentRegistrationsPanel } from "../../components/app/TournamentRegistrationsPanel";
 import {
   INITIAL_APPLICANTS,
   STARTING_ROLL_SEQUENCE,
@@ -156,6 +157,8 @@ export function ManagerVerificationsPage() {
           </StaggerGroup>
         </Reveal>
       )}
+
+      <TournamentRegistrationsPanel />
 
       <StaggerGroup className="mt-8 flex flex-col divide-y divide-(--color-line) rounded-2xl border border-(--color-line)">
         {applicants.map((applicant) => {
