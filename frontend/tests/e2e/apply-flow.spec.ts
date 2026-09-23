@@ -19,6 +19,10 @@ test("apply page: submitting the form shows a confirming panel naming the chosen
   await page.getByRole("button", { name: /Intro to Design/ }).click();
   await page.getByLabel("Full name").fill("Jordan Lee");
   await page.getByLabel("Email").fill("jordan.lee@example.com");
+  // A scan-to-pay QR confirmation is now required before submitting (see
+  // components/ui/ScanToPayCard.tsx) — no real payment API, just a checkbox
+  // confirming the applicant scanned the QR code.
+  await page.getByLabel("I've completed the payment via QR scan").check();
   await page.getByRole("button", { name: "Apply now" }).click();
 
   await expect(page.getByRole("heading", { name: "Thanks — we've got it" })).toBeVisible();

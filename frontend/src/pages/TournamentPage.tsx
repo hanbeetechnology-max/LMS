@@ -7,6 +7,7 @@ import { TextField } from "../components/ui/TextField";
 import { ScanToPayCard } from "../components/ui/ScanToPayCard";
 import { Logo } from "../components/landing/Logo";
 import { Footer } from "../components/landing/Footer";
+import { registerForTournament } from "../lib/tournamentApi";
 
 const EVENT = {
   name: "HANBEE RC F1 Championship",
@@ -141,10 +142,13 @@ function RegistrationForm() {
     setPaymentError(null);
     setSubmitting(true);
     try {
-      // No entries table yet — a staff member confirms the QR payment and
-      // adds the driver to the roster manually, same pattern as course
-      // applications (ApplyPage) until this gets a real Supabase table.
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      // Persist the registration when Supabase is configured — a staff
+      // member confirms the QR payment and updates `status` manually for
+      // now (see supabase/migrations/0009_tournament_registrations.sql).
+      // If Supabase isn't configured, or the insert fails, still show the
+      // success state rather than blocking the user, same fallback
+      // behavior used elsewhere in this codebase (coursesApi.ts).
+      await registerForTournament(form.driverName, form.email, form.phone, paymentConfirmed);
       setSubmitted(true);
     } finally {
       setSubmitting(false);

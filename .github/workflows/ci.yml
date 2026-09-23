@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Type-check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # STAGING_SUPABASE_URL / STAGING_SUPABASE_ANON_KEY are GitHub Actions
+      # repo secrets that don't exist yet — they should point at a dedicated
+      # staging Supabase project (never production) once one is created.
+      # Until the user adds those secrets, VITE_SUPABASE_URL/ANON_KEY below
+      # resolve to empty strings, `supabaseConfigured` in
+      # frontend/src/lib/supabaseClient.ts is false, and the Supabase-backed
+      # tests that need a real backend will fail — frontend/playwright.config.ts's
+      # `webServer` block still boots the Vite dev server fine, but any spec
+      # that depends on real Supabase data/auth won't have it. That's expected
+      # and not a workaround target: do NOT hardcode real/production Supabase
+      # credentials here to "fix" it. Once the user creates a staging Supabase
+      # project and adds these two secrets in repo Settings → Secrets and
+      # variables → Actions, this step starts exercising the real backend.
+      - name: Run Playwright tests
+        working-directory: frontend
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+        run: npx playwright test
