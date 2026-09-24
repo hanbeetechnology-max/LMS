@@ -72,6 +72,9 @@ function RequestStep() {
         >
           Back to sign in
         </Link>
+        <p className="mt-6 text-xs leading-relaxed text-(--color-slate)">
+          If the reset email does not arrive, your school or HANBEE administrator can help.
+        </p>
       </motion.div>
     );
   }
@@ -101,6 +104,10 @@ function RequestStep() {
           {submitting ? "Sending…" : "Send reset link"}
         </button>
       </form>
+
+      <p className="mt-4 rounded-xl bg-(--color-cloud) px-4 py-3 text-xs leading-relaxed text-(--color-slate)">
+        If the reset email does not arrive, your school or HANBEE administrator can help.
+      </p>
 
       <p className="mt-8 text-sm text-(--color-slate)">
         <Link to="/login" className="font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">

@@ -1,15 +1,10 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Seo } from "../lib/Seo";
 import { Reveal, StaggerGroup, StaggerItem } from "../components/ui/Reveal";
-import { TextField } from "../components/ui/TextField";
-import { ScanToPayCard } from "../components/ui/ScanToPayCard";
 import { Logo } from "../components/landing/Logo";
 import { Footer } from "../components/landing/Footer";
-import { registerForTournament } from "../lib/tournamentApi";
-import { useAuth } from "../lib/AuthProvider";
-import { useToast } from "../lib/ToastProvider";
 
 const EVENT = {
   name: "HANBEE RC F1 Championship",
@@ -22,7 +17,7 @@ const EVENT = {
 const DETAILS = [
   { label: "Format", value: "Qualifying heats → knockout finals", accent: "var(--rc-indigo)" },
   { label: "Classes", value: "1/10 scale RC F1, open ECU", accent: "var(--rc-cyan)" },
-  { label: "Entry", value: "Open to all skill levels", accent: "var(--rc-gold)" },
+  { label: "Entry", value: "School teams, all skill levels", accent: "var(--rc-gold)" },
 ];
 
 interface TimeLeft {
@@ -98,125 +93,22 @@ function HeaderBar() {
           <Link to="/" className="hidden text-sm font-medium text-(--color-ink-soft) transition-colors hover:text-(--color-ink) sm:block">
             ← Back to HanbeeLms
           </Link>
-          <a
-            href="#register"
+          <Link
+            to="/login"
+            className="hidden text-sm font-medium text-(--color-ink-soft) transition-colors hover:text-(--color-ink) sm:block"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/register-school"
             className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
             style={{ background: "linear-gradient(135deg, var(--rc-crimson), var(--rc-gold))" }}
           >
-            Register
-          </a>
+            Register your school
+          </Link>
         </div>
       </div>
     </motion.header>
-  );
-}
-
-interface RegistrationFormState {
-  driverName: string;
-  email: string;
-  phone: string;
-}
-
-function RegistrationForm() {
-  const { profile } = useAuth();
-  const { showToast } = useToast();
-  const [form, setForm] = useState<RegistrationFormState>({ driverName: "", email: "", phone: "" });
-  const [errors, setErrors] = useState<Partial<Record<"driverName" | "email", string>>>({});
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  function validate() {
-    const next: typeof errors = {};
-    if (!form.driverName.trim()) next.driverName = "Driver name is required";
-    if (!form.email) next.email = "Email is required";
-    else if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = "Enter a valid email address";
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!validate()) return;
-    // Payment is optional for now — not every tournament will collect a
-    // fee yet, so the QR card stays visible (the option to pay is still
-    // there) but no longer blocks submission. The server never trusts
-    // this flag either way (0010's trigger forces it false regardless).
-    setSubmitting(true);
-    try {
-      // Persist the registration when Supabase is configured — a staff
-      // member confirms the QR payment and updates `status` manually for
-      // now (see supabase/migrations/0009_tournament_registrations.sql).
-      // If Supabase isn't configured, or the insert fails, still show the
-      // success state rather than blocking the user, same fallback
-      // behavior used elsewhere in this codebase (coursesApi.ts).
-      await registerForTournament(form.driverName, form.email, form.phone, paymentConfirmed, profile?.id);
-      setSubmitted(true);
-      showToast("You're registered! We'll be in touch with race-day details.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (submitted) {
-    return (
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-(--color-teal-soft) text-(--color-teal)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        </span>
-        <h3 className="mt-4 font-display text-2xl font-semibold text-(--color-ink)">You're registered</h3>
-        <p className="mt-2 text-[15px] text-(--color-slate)">
-          We'll confirm your payment and email {form.email} with your race-day details.
-        </p>
-      </motion.div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} noValidate className="mx-auto flex max-w-md flex-col gap-5 text-left">
-      <TextField
-        label="Driver name"
-        name="driverName"
-        autoComplete="name"
-        placeholder="Jordan Lee"
-        value={form.driverName}
-        onChange={(e) => setForm((f) => ({ ...f, driverName: e.target.value }))}
-        error={errors.driverName}
-      />
-      <TextField
-        label="Email"
-        type="email"
-        name="email"
-        autoComplete="email"
-        placeholder="you@example.com"
-        value={form.email}
-        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-        error={errors.email}
-      />
-      <TextField
-        label="Phone (optional)"
-        type="tel"
-        name="phone"
-        autoComplete="tel"
-        placeholder="(555) 123-4567"
-        value={form.phone}
-        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-      />
-      <ScanToPayCard
-        amountLabel="entry fee (optional for now)"
-        confirmed={paymentConfirmed}
-        onConfirmedChange={setPaymentConfirmed}
-      />
-      <button
-        type="submit"
-        disabled={submitting}
-        className="inline-flex items-center justify-center rounded-full bg-(--color-ink) px-8 py-4 text-sm font-semibold text-(--color-paper) transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100"
-      >
-        {submitting ? "Registering…" : "Register now →"}
-      </button>
-    </form>
   );
 }
 
@@ -225,7 +117,7 @@ export function TournamentPage() {
     <div className="rc-theme bg-(--color-paper)">
       <Seo
         title="HANBEE RC F1 Tournament"
-        description="Register for the HANBEE RC F1 Championship — a radio-control Formula 1 racing tournament. Learn the basics on HanbeeLms first."
+        description="The HANBEE RC F1 Championship: a radio-control Formula 1 racing tournament. Schools enter teams through HanbeeLms."
         path="/tournament"
       />
       <HeaderBar />
@@ -258,19 +150,19 @@ export function TournamentPage() {
               <CountdownTimer target={EVENT.isoDate} />
             </Reveal>
             <Reveal delay={0.3} className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <a
-                href="#register"
+              <Link
+                to="/register-school"
                 className="inline-flex items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold text-white shadow-[0_10px_40px_-10px_var(--rc-crimson)] transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
                 style={{ background: "linear-gradient(135deg, var(--rc-crimson), var(--rc-gold))" }}
               >
-                Register a driver →
-              </a>
-              <a
-                href="#learn"
+                Register your school →
+              </Link>
+              <Link
+                to="/login"
                 className="rc-glass inline-flex items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold text-(--color-ink-soft) transition-colors hover:text-(--color-ink)"
               >
-                New to RC racing?
-              </a>
+                Sign in
+              </Link>
             </Reveal>
           </div>
         </section>
@@ -311,41 +203,30 @@ export function TournamentPage() {
           </div>
         </section>
 
-        {/* LMS tie-in */}
-        <section id="learn" className="border-t border-(--color-line) px-6 py-20 lg:px-10">
-          <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 rounded-3xl border border-(--color-line) bg-(--color-cloud)/40 p-10 text-center sm:p-14">
-            <Reveal>
-              <h2 className="font-display text-3xl font-semibold tracking-tight text-(--color-ink) sm:text-4xl">
-                New to RC racing? Learn the basics first.
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-(--color-slate)">
-                HanbeeLms — our learning platform — has courses covering RC fundamentals, setup, and race strategy.
-                No racing experience required to start.
-              </p>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <Link
-                to="/apply"
-                className="inline-flex items-center justify-center rounded-full bg-(--color-ink) px-7 py-3.5 text-sm font-semibold text-(--color-paper) transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
-              >
-                Start learning on HanbeeLms →
-              </Link>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* Registration */}
+        {/* How to enter */}
         <section id="register" className="border-t border-(--color-line) px-6 py-24 text-center lg:px-10">
           <Reveal>
             <h2 className="font-display text-3xl font-semibold tracking-tight text-(--color-ink) sm:text-4xl">
-              Ready to race?
+              Entries come through schools
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-[15px] text-(--color-slate)">
-              Spots are limited. Register now to reserve your entry for {EVENT.name}.
+            <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-(--color-slate)">
+              Students race as part of a school team. Register your school, invite your students, and form a team inside
+              HanbeeLms. Students already invited by their school can sign in.
             </p>
           </Reveal>
-          <Reveal delay={0.08} className="mt-10">
-            <RegistrationForm />
+          <Reveal delay={0.08} className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              to="/register-school"
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-ink) px-7 py-3.5 text-sm font-semibold text-(--color-paper) transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              Register your school
+            </Link>
+            <Link
+              to="/login"
+              className="rc-glass inline-flex min-h-11 items-center justify-center rounded-full px-7 py-3.5 text-sm font-semibold text-(--color-ink-soft) transition-colors hover:text-(--color-ink)"
+            >
+              Sign in
+            </Link>
           </Reveal>
         </section>
       </main>

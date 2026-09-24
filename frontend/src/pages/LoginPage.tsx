@@ -146,15 +146,15 @@ export function LoginPage() {
 
         <div className="mt-8 flex flex-col gap-2 text-sm text-(--color-slate)">
           <p className="font-medium text-(--color-ink-soft)">New here?</p>
-          <Link to="/signup" className="font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">
-            Staff — create an account →
+          <Link to="/register-school" className="inline-flex min-h-11 items-center font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">
+            Register your school →
           </Link>
-          <Link to="/apply" className="font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">
-            Student — apply to a course →
+          <Link to="/signup" className="inline-flex min-h-11 items-center font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">
+            Hanbee staff? Apply here →
           </Link>
-          <Link to="/setup" className="font-medium text-(--color-ink) transition-colors hover:text-(--color-violet)">
-            Manager — set up your organization →
-          </Link>
+          <p className="mt-1 rounded-xl bg-(--color-cloud) px-4 py-3 text-xs leading-relaxed">
+            Students join through their school's invitation link.
+          </p>
         </div>
       </AuthLayout>
     </>

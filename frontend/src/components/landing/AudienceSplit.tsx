@@ -37,7 +37,7 @@ export function AudienceSplit() {
                 className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-40 blur-3xl transition-transform duration-700 group-hover:scale-125"
                 style={{ background: "oklch(0.55 0.21 288)" }}
               />
-              <span className="font-mono text-xs uppercase tracking-[0.14em] text-(--color-teal-deep)">For Staff</span>
+              <span className="font-mono text-xs uppercase tracking-[0.14em] text-(--color-teal-deep)">For Schools and Staff</span>
               <h3 id="for-staff-heading" className="mt-4 font-display text-3xl font-semibold tracking-tight">
                 A command center for every course you run
               </h3>
@@ -49,12 +49,12 @@ export function AudienceSplit() {
                   </StaggerItem>
                 ))}
               </StaggerGroup>
-              <a
-                href="#get-started"
+              <Link
+                to="/register-school"
                 className="mt-10 inline-flex items-center gap-2 rounded-full bg-(--color-paper-fixed) px-6 py-3 text-sm font-semibold text-(--color-ink-fixed) transition-transform duration-300 hover:scale-[1.03]"
               >
-                Set up your first course →
-              </a>
+                Register your school →
+              </Link>
             </article>
           </Reveal>
 
@@ -80,12 +80,12 @@ export function AudienceSplit() {
                   </StaggerItem>
                 ))}
               </StaggerGroup>
-              <Link
-                to="/apply"
-                className="mt-10 inline-flex items-center gap-2 rounded-full bg-(--color-ink) px-6 py-3 text-sm font-semibold text-(--color-paper) transition-transform duration-300 hover:scale-[1.03]"
-              >
-                Apply to a course →
-              </Link>
+              <p className="mt-10 text-sm text-(--color-slate)">
+                Students join through their school's invitation link.{" "}
+                <Link to="/login" className="font-semibold text-(--color-ink) hover:text-(--color-violet)">
+                  Sign in →
+                </Link>
+              </p>
             </article>
           </Reveal>
         </div>
