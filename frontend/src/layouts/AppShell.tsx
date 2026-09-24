@@ -14,11 +14,17 @@ export interface NavItem {
   label: string;
   to: string;
   Icon: ComponentType;
+  /** Only highlight when the path matches exactly (for overview links). */
+  end?: boolean;
 }
 
 interface AppShellProps {
   navItems: NavItem[];
   settingsPath: string;
+  /** Optional bar under the header (e.g. the student side switcher). */
+  topSlot?: React.ReactNode;
+  /** Optional extra classes for the main content area (e.g. a scoped theme). */
+  mainClassName?: string;
 }
 
 function MenuIcon() {
@@ -373,14 +379,16 @@ function ProfileMenu({ settingsPath }: { settingsPath: string }) {
   );
 }
 
-export function AppShell({ navItems, settingsPath }: AppShellProps) {
+export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }: AppShellProps) {
   useAttendanceHeartbeat();
   const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   useDismissOnEscape(mobileOpen, () => setMobileOpen(false), mobileMenuTriggerRef);
-  const activeItem = navItems.find((item) => location.pathname.startsWith(item.to));
+  const activeItem = navItems
+    .filter((item) => location.pathname.startsWith(item.to))
+    .sort((a, b) => b.to.length - a.to.length)[0];
   // Skip route-param segments (numeric ids, UUIDs) when picking a fallback
   // title, so e.g. /staff/students/1 reads "Students" rather than "1".
   const isIdLikeSegment = (segment: string) =>
@@ -410,10 +418,11 @@ export function AppShell({ navItems, settingsPath }: AppShellProps) {
           </button>
         </div>
         <nav className="flex flex-col gap-1 p-4" aria-label="Primary">
-          {navItems.map(({ label, to, Icon }) => (
+          {navItems.map(({ label, to, Icon, end }) => (
             <NavLink
               key={to}
               to={to}
+              end={end}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
@@ -463,7 +472,9 @@ export function AppShell({ navItems, settingsPath }: AppShellProps) {
           </div>
         </header>
 
-        <main className="flex-1 px-6 py-8 lg:px-10">
+        {topSlot && <div className="border-b border-(--color-line) bg-(--color-paper) px-6 py-3 lg:px-10 print:hidden">{topSlot}</div>}
+
+        <main className={`flex-1 px-6 py-8 lg:px-10 ${mainClassName}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
