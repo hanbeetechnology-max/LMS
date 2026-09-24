@@ -15,9 +15,12 @@ interface AuthLayoutProps {
   panelTitle: string;
   panelDescription: string;
   accent?: "--color-violet" | "--color-teal" | "--color-amber";
+  /** A slightly wider form column for longer forms. */
+  wide?: boolean;
 }
 
 export function AuthLayout({
+  wide = false,
   children,
   panelIcon: PanelIcon,
   panelTitle,
@@ -30,7 +33,7 @@ export function AuthLayout({
         <Link to="/" className="absolute left-6 top-8 sm:left-10 lg:left-16" aria-label="HanbeeLms home">
           <Logo />
         </Link>
-        <div className="mx-auto w-full max-w-sm">
+        <div className={`mx-auto w-full ${wide ? "max-w-md" : "max-w-sm"}`}>
           <Reveal>{children}</Reveal>
         </div>
       </div>
@@ -86,7 +89,7 @@ export function AuthLayout({
               <p className="font-display text-lg font-semibold leading-snug text-(--color-ink)">{panelTitle}</p>
               <p className="text-sm leading-relaxed text-(--color-slate)">{panelDescription}</p>
               <p className="pt-2 text-xs italic leading-relaxed text-(--color-mist)">
-                "Join racers and builders on HanbeeLms — one platform for the RC F1 tournament and the courses behind
+                "Schools, students and the HANBEE team on one platform: the RC F1 tournament and the courses behind
                 it."
               </p>
             </div>

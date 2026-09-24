@@ -13,11 +13,11 @@ export function LandingPage() {
     <>
       <CustomCursor />
       <Seo
-        title="One LMS for Staff and Students"
-        description="HanbeeLms is a learning management system built for two roles: staff who create and run courses, and students who learn, attend, and connect — all in one async platform."
+        title="One Platform for Schools and Students"
+        description="HanbeeLms is where schools register, invite students, enter RC F1 tournament teams and follow course progress, with HANBEE staff running courses and verifying schools."
         path="/"
       />
-      <div className="rc-theme bg-(--color-paper)">
+      <div className="rc-theme overflow-x-clip bg-(--color-paper)">
         <Nav />
         <main>
           <Hero />

@@ -17,7 +17,8 @@ const COLUMNS = [
     links: [
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
-      { label: "Apply now", href: "/apply" },
+      { label: "Register your school", href: "/register-school" },
+      { label: "Sign in", href: "/login" },
     ],
   },
   {
@@ -39,7 +40,7 @@ export function Footer() {
               <Logo />
             </a>
             <p className="mt-4 max-w-[22ch] text-sm leading-relaxed text-(--color-mist)">
-              One LMS for staff and students. Courses, rosters, attendance, and messaging in a
+              One platform for schools, students and staff. Courses, rosters, attendance, and messaging in a
               single async platform.
             </p>
           </div>

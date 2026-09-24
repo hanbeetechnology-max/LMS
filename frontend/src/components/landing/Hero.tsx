@@ -76,7 +76,7 @@ export function Hero() {
             </div>
 
             <AnimatedWords
-              text="Race in the HANBEE RC F1 Championship, or learn the fundamentals in our Academy courses first. One login, two arenas — racers and builders welcome."
+              text="Schools enter teams in the HANBEE RC F1 Championship and take Academy courses on the same platform. Register your school, invite your students, and follow their progress."
               delay={0.45}
               className="mt-8 max-w-xl text-lg leading-relaxed text-(--color-slate) sm:text-xl"
             />
@@ -88,7 +88,7 @@ export function Hero() {
               className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center"
             >
               <Link
-                to="/tournament"
+                to="/register-school"
                 className="group inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white shadow-[0_10px_40px_-10px_var(--rc-crimson)] transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
                 style={{
                   // Darkened (60% brand color / 40% black) so the white label text
@@ -101,17 +101,17 @@ export function Hero() {
                     "linear-gradient(135deg, color-mix(in srgb, var(--rc-crimson) 60%, black), color-mix(in srgb, var(--rc-gold) 60%, black))",
                 }}
               >
-                Enter RC Racing Arena
+                Register your school
                 <span className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">
                   →
                 </span>
               </Link>
-              <a
-                href="#for-students"
+              <Link
+                to="/login"
                 className="rc-glass inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-(--color-ink-soft) transition-colors duration-300 hover:text-(--color-ink)"
               >
-                Explore Academy Courses
-              </a>
+                Sign in
+              </Link>
             </motion.div>
           </div>
 

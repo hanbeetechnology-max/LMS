@@ -10,7 +10,7 @@ const STEPS = [
   {
     n: "02",
     title: "Students get invited",
-    desc: "An email invite or open catalog listing brings students into the right section.",
+    desc: "Your school invites students by email and shares one join link. Only invited emails can sign up.",
   },
   {
     n: "03",

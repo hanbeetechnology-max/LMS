@@ -60,18 +60,19 @@ export function Nav() {
           </li>
         </ul>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Link
             to="/login"
-            className="hidden text-sm font-medium text-(--color-ink-soft) transition-colors hover:text-(--color-ink) sm:block"
+            className="text-sm font-medium text-(--color-ink-soft) transition-colors hover:text-(--color-ink)"
           >
             Sign in
           </Link>
           <Link
-            to="/signup"
+            to="/register-school"
             className="rounded-full bg-(--color-ink) px-5 py-2.5 text-sm font-semibold text-(--color-paper) transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
           >
-            Get started
+            <span className="sm:hidden">Register</span>
+            <span className="hidden sm:inline">Register your school</span>
           </Link>
         </div>
       </nav>

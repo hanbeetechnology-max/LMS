@@ -16,30 +16,24 @@ export function CTA() {
               }}
             />
             <h2 id="cta-heading" className="relative font-display text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-              Race, learn, or teach — one login for all of it
+              Bring your school to the track
             </h2>
             <p className="relative mx-auto mt-5 max-w-xl text-lg text-(--color-paper-fixed)/75">
-              Register for the RC F1 tournament, start an Academy course, or set up your staff
-              account — free to start, no experience required.
+              Register your school, invite your students by email, and let them race and learn
+              together. HANBEE verifies every school first.
             </p>
             <div className="relative mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                to="/tournament"
+                to="/register-school"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-(--color-paper-fixed) px-7 py-3.5 text-base font-semibold text-(--color-ink-fixed) transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
               >
-                Enter RC Racing Arena
+                Register your school
               </Link>
               <Link
-                to="/signup"
+                to="/login"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-(--color-paper-fixed)/25 px-7 py-3.5 text-base font-semibold text-(--color-paper-fixed) transition-colors duration-300 hover:border-(--color-paper-fixed)/60"
               >
-                Create a staff account
-              </Link>
-              <Link
-                to="/apply"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-(--color-paper-fixed)/25 px-7 py-3.5 text-base font-semibold text-(--color-paper-fixed) transition-colors duration-300 hover:border-(--color-paper-fixed)/60"
-              >
-                Apply to a course
+                Sign in
               </Link>
             </div>
           </div>
