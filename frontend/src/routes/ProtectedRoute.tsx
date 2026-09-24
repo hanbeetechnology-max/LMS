@@ -5,14 +5,21 @@ import { PageLoadingFallback } from "../components/PageLoadingFallback";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  role?: Role | "any";
+  /** One role, several roles, or "any" signed-in role. */
+  role?: Role | Role[] | "any";
 }
 
 /**
- * Wired into router.tsx around the /staff and /student route trees.
- * AuthProvider currently checks against the seeded demo accounts in
- * lib/mockAuth.ts (no real backend yet — see docs/PLAN.md §6 for the
- * Supabase session this will become in Phase 1).
+ * The route guard. Order matters:
+ *  1. still loading -> fallback
+ *  2. not signed in -> /login
+ *  3. suspended or revoked -> /account-suspended
+ *  4. Hanbee staff not yet approved -> /pending-approval
+ *  5. school staff whose school is still pending verification -> /pending-approval
+ *  6. school staff whose school is suspended or closed -> /school-inactive
+ *  7. wrong role -> /not-authorized
+ * These states are also enforced by the database (migrations 0023, 0024,
+ * 0028); this guard only decides which screen to show.
  */
 export function ProtectedRoute({ children, role = "any" }: ProtectedRouteProps) {
   const { profile, loading } = useAuth();
@@ -25,14 +32,25 @@ export function ProtectedRoute({ children, role = "any" }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
-  // A self-service staff signup can't reach any staff route until a manager
-  // approves them — checked here too (not just at login) so a direct nav,
-  // bookmark, or back-button can't route around it.
+  if (profile.accountStatus !== "active") {
+    return <Navigate to="/account-suspended" replace />;
+  }
+
   if (profile.role === "staff" && !profile.approved) {
     return <Navigate to="/pending-approval" replace />;
   }
 
-  if (role !== "any" && profile.role !== role) {
+  if (profile.role === "school_staff") {
+    if (!profile.approved || profile.school?.status === "pending") {
+      return <Navigate to="/pending-approval" replace />;
+    }
+    if (!profile.school || profile.school.status !== "active" || profile.school.memberStatus !== "active") {
+      return <Navigate to="/school-inactive" replace />;
+    }
+  }
+
+  const allowed = role === "any" ? true : Array.isArray(role) ? role.includes(profile.role) : profile.role === role;
+  if (!allowed) {
     return <Navigate to="/not-authorized" replace />;
   }
 

@@ -8,6 +8,7 @@ import { CoursesIcon } from "../components/landing/icons";
 import { useAuth } from "../lib/AuthProvider";
 import { DEMO_ACCOUNTS } from "../lib/mockAuth";
 import { supabaseConfigured } from "../lib/supabaseClient";
+import { ROLE_HOME } from "../portal/paths";
 
 interface FormState {
   email: string;
@@ -46,12 +47,9 @@ export function LoginPage() {
       setFormError("Invalid email or password");
       return;
     }
-    if (profile.role === "staff" && !profile.approved) {
-      navigate("/pending-approval", { replace: true });
-      return;
-    }
-    const destination = profile.role === "staff" ? "/staff/dashboard" : profile.role === "manager" ? "/manager/dashboard" : "/student/dashboard";
-    navigate(destination, { replace: true });
+    // Every account state (pending, suspended, inactive school) is handled by
+    // ProtectedRoute, which redirects from the role's home if needed.
+    navigate(ROLE_HOME[profile.role], { replace: true });
   }
 
   return (

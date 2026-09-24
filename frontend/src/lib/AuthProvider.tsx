@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { clearSession, getStoredSession, signIn as mockSignIn, type StoredSession, type Role } from "./mockAuth";
 import { supabase, supabaseConfigured } from "./supabaseClient";
+import { fetchMySchool, type AccountStatus, type MySchool } from "./portalApi";
 
 export type { Role };
 
@@ -15,6 +16,13 @@ export interface Profile {
    *  (see supabase/migrations/0005_staff_approval.sql). Always true for
    *  every other role and signup path. */
   approved: boolean;
+  /** Suspended or revoked accounts are sent to /account-suspended (migration 0023). */
+  accountStatus: AccountStatus;
+  /** A student with no school (added by Hanbee staff, or converted after their school closed). */
+  isSolo: boolean;
+  /** The latest school membership, even an ended one, so a student whose school
+   *  closed can be told so. Null for staff, managers and solo students. */
+  school: MySchool | null;
 }
 
 /** What's backing the current session's attendance tracking, if any. */
@@ -34,19 +42,30 @@ interface AuthContextValue {
   attendanceBackend: AttendanceBackend;
   signIn: (email: string, password: string) => Promise<Profile | null>;
   signOut: () => void;
+  /** Reload the profile and school after something changed them (joined a school, went solo). */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function toProfile(session: StoredSession): Profile {
-  return { id: session.id, role: session.role, fullName: session.fullName, email: session.email, avatarUrl: null, approved: true };
+  return { id: session.id, role: session.role, fullName: session.fullName, email: session.email, avatarUrl: null, approved: true, accountStatus: "active", isSolo: false, school: null };
 }
 
 async function fetchSupabaseProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("profiles").select("id, email, full_name, role, avatar_url, approved").eq("id", userId).single();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, role, avatar_url, approved, account_status, is_solo")
+    .eq("id", userId)
+    .single();
   if (error || !data) return null;
-  return { id: data.id, role: data.role as Role, fullName: data.full_name, email: data.email, avatarUrl: data.avatar_url, approved: data.approved };
+  const role = data.role as Role;
+  const school = role === "student" || role === "school_staff" ? await fetchMySchool() : null;
+  return {
+    id: data.id, role, fullName: data.full_name, email: data.email, avatarUrl: data.avatar_url, approved: data.approved,
+    accountStatus: data.account_status as AccountStatus, isSolo: data.is_solo, school,
+  };
 }
 
 const HEARTBEAT_TIMEOUT_MS = 90_000; // mirrors supabase/migrations/0003_functions.sql's finalize threshold
@@ -170,8 +189,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }
 
+  async function refreshProfile() {
+    if (!supabase) return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    const prof = await fetchSupabaseProfile(session.user.id);
+    if (prof) setProfile(prof);
+  }
+
   return (
-    <AuthContext.Provider value={{ user: null, profile, role: profile?.role ?? null, loading, authSource, attendanceBackend, signIn, signOut }}>
+    <AuthContext.Provider value={{ user: null, profile, role: profile?.role ?? null, loading, authSource, attendanceBackend, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

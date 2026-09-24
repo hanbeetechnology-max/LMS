@@ -1,4 +1,4 @@
-export type Role = "staff" | "student" | "manager";
+export type Role = "staff" | "student" | "manager" | "school_staff";
 
 interface MockUser {
   id: string;
