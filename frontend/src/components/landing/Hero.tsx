@@ -90,7 +90,16 @@ export function Hero() {
               <Link
                 to="/tournament"
                 className="group inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white shadow-[0_10px_40px_-10px_var(--rc-crimson)] transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98]"
-                style={{ background: "linear-gradient(135deg, var(--rc-crimson), var(--rc-gold))" }}
+                style={{
+                  // Darkened (60% brand color / 40% black) so the white label text
+                  // clears WCAG AA 4.5:1 across the whole gradient — the shared
+                  // --rc-crimson/--rc-gold tokens are untouched (still used at full
+                  // brightness elsewhere), only this button's own background is
+                  // adjusted, per the project's established "fix only what's
+                  // failing" contrast-audit practice.
+                  background:
+                    "linear-gradient(135deg, color-mix(in srgb, var(--rc-crimson) 60%, black), color-mix(in srgb, var(--rc-gold) 60%, black))",
+                }}
               >
                 Enter RC Racing Arena
                 <span className="transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">

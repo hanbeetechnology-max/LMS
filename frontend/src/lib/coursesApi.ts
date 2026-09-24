@@ -102,8 +102,14 @@ export async function fetchMyCompletedLessonIds(enrollmentId: string): Promise<S
   return new Set((data ?? []).map((row) => row.lesson_id));
 }
 
-export async function markLessonComplete(enrollmentId: string, lessonId: string): Promise<void> {
-  await supabase?.from("lesson_completions").insert({ enrollment_id: enrollmentId, lesson_id: lessonId });
+/** The server derives the enrollment itself and enforces order, enrollment and
+ *  quiz-unlock rules (migration 0019); the first argument is kept only so the
+ *  existing lesson-viewer call site keeps compiling. Returns false when the
+ *  server refuses. */
+export async function markLessonComplete(_enrollmentId: string, lessonId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc("complete_lesson", { p_lesson_id: lessonId });
+  return !error;
 }
 
 export async function unmarkLessonComplete(enrollmentId: string, lessonId: string): Promise<void> {
