@@ -58,3 +58,16 @@ Reference standards to measure against: OWASP Top 10 and OWASP ASVS for web apps
 
 ## D. Already fixed (proven live)
 Payment field trust (0010), messaging recursion (0015), role self-promotion, attendance forgery, certificate forgery (0016), time-entry forgery (0017), thread pin/lock, locked-thread posting, invite forgery and invite role escalation, certificate completion check (0018).
+
+
+## E. Multi-school enforcement (added 2026-09-24)
+
+Proven by `supabase/tests/rls/` (121 checks across 0023, 0024, 0028):
+- [x] **Signup is invite-only in the database.** A stranger, or someone claiming the student role, is refused. Five allowed paths only (see `docs/MULTI_SCHOOL_PLATFORM.md` section 4).
+- [x] **Cross-school isolation** for announcements, calendar, enrollments, discussions and profiles.
+- [x] **Instant revocation:** suspended or revoked accounts lose staff powers, course content, announcements and lesson completion.
+- [x] **Audit log** for privileged actions; clients cannot write it or call `log_audit`.
+- [x] **First-verifier-wins** school verification (row locked); a second verifier is told who decided.
+- [x] Junk accounts removed (33), including 10 approved staff with test passwords (this closes most of S5; the seeded `ava`, `jamie`, `morgan` accounts remain and must be replaced before launch).
+- [ ] Known limit: without email confirmation, an invited email could be claimed by someone who holds the school link and knows that email. Mitigations in place: school sees who joined and can revoke. Real fix: SMTP and email confirmation.
+- [ ] One manager only (unique index and recovery procedure) at final production.

@@ -1148,3 +1148,28 @@ Tracker and full list of security checks: `docs/SECURITY_PLAN.md`. Each fix was 
 Verification: 10 + 5 + 10 live checks; full browser suite 97 passed, 6 failed. The 6 failures are the pre-existing dark-mode contrast and theme-toggle tests, unchanged by this work. Running two specs that use Ava's account in parallel caused one false failure (shared-account race); run with `--workers=1`.
 
 Open: S5-S13 in the tracker. Cleanup candidate: 21 unapproved staff accounts left by test signups.
+
+
+### 2026-09-24 — Tournaments as teams, leaderboard, course applications (migration 0027)
+
+- **0027**: tables `tournaments`, `tournament_teams`, `tournament_team_members`, `tournament_results`, `applications` (course kind only). RLS on all; INSERT/UPDATE/DELETE revoked from clients; all writes via SECURITY DEFINER functions (create/update_tournament, create_team, create_solo_team, add/remove_team_member, apply_team, decide_team, withdraw_team, set_result, apply_for_course, decide_course_application, enroll_student). Trust triggers (0010 pattern) pin status and payment_declared. Audit rows for Hanbee actions.
+- Visibility: tournaments and `get_leaderboard()` (team and school name only) for manager, Hanbee staff, staff of an active school, students with an active school, solo students; a student of a closed school sees nothing until solo. Team detail via `list_visible_teams` / `get_team_roster` scoped by role.
+- `org_id_at_join` is snapshotted on team members and applications and survives a school closing.
+- Data module: `frontend/src/lib/tournamentPortalApi.ts` (not wired into pages). Proven with 149 impersonated-user checks, rolled back.
+
+
+### 2026-09-24 - Multi-school foundation: invite-only signup, schools, tenant scoping (migrations 0022-0028)
+
+Full design, decisions and status: `docs/MULTI_SCHOOL_PLATFORM.md`. Security tracker: `docs/SECURITY_PLAN.md`. Database security tests (rerunnable): `supabase/tests/`.
+
+- Cleanup: deleted 33 `e2e-signup-*` accounts (23 unapproved, 10 approved with test passwords; none owned data). Remaining: 2 Hanbee staff, 1 student, 2 managers.
+- 0022/0023: `school_staff` role, `organizations`, `organization_members` (history), `profiles.account_status`, role helpers, read-only RLS. A suspended account has no role, so it loses staff powers at once. Fixed my own first draft of the profile guard: a suspended user's null role must count as "not a manager".
+- 0024: signup is invite-only in the database (five allowed paths), school registration, first-verifier-wins `verify_school`, bulk `invite_students`, `invite_school_staff`, `revoke_invitation`, `audit_log`. Found and fixed during testing: Supabase grants function access to `authenticated` directly, so `log_audit` had to be revoked from that role by name or any signed-in user could forge audit entries.
+- 0025: `profiles.is_solo`.
+- 0028: tenant scoping (announcements with `org_id`, calendar with `org_id` and personal `owner_id`, school-staff read-only enrollments, discussions limited to enrolled students, profile visibility by school, anonymous tournament registration closed, revocation honoured by course access and `complete_lesson`). Postgres truncates policy names at 63 characters; two long names collided and were shortened.
+- Tests: 0023 (22), 0024 (45), 0028 (54) all pass, saved in `supabase/tests/rls/`.
+- Chat v2 (0026) and tournaments/teams/applications (0027) were built in parallel by background agents; see their entries.
+
+## 2026-09-24 - Chat v2 backend (migration 0026, chatApi.ts)
+
+Applied live. Contact rules live in the database (`chat_relation_dir`, `chat_can_message`, `chat_contacts`, `start_conversation_with`): students reach only their school's owner/staff and Hanbee staff who own a course they are enrolled in (active/completed); school staff reach their own school, all approved Hanbee staff and managers; Hanbee staff reach only their own courses' students, school owners, staff and managers; managers reach everyone active. Replies are allowed in both directions once a direct chat exists. Automatic school groups ("<school> - Students") with join/leave system messages, admin-only add/remove (`chat_add_member`, `chat_remove_member`), manager pinned chats (`provision_manager_chats`), read state (`chat_mark_read`, `chat_conversations`, `chat_members`), 30 messages/minute limit, system messages only from trusted functions (guard uses current_user, so a client setting the flag itself is not trusted), realtime publication for messages and conversation_participants. Data layer: `frontend/src/lib/chatApi.ts` (not wired into any page). Tests: `supabase/tests/rls/0026_chat_v2.mjs` (97 checks).

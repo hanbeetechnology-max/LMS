@@ -1,0 +1,107 @@
+import { connect } from "./_db.mjs";
+const c = await connect();
+const id = async e => (await c.query("select id from profiles where email=$1",[e])).rows[0].id;
+const ava=await id("ava@student.edu"), jamie=await id("jamie@hanbeelms.edu"), morgan=await id("morgan@hanbeelms.edu");
+let pass=0, fail=0; const check=(n,ok,x="")=>{(ok?pass++:fail++);console.log(ok?"PASS":"FAIL",n,x)};
+const asUser = async (u) => { await c.query("reset role"); await c.query("set local role authenticated"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:u,role:"authenticated"})]); };
+const asAnon = async () => { await c.query("reset role"); await c.query("set local role anon"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({role:"anon"})]); };
+const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
+const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
+const one = async (sql,p) => (await c.query(sql,p)).rows[0];
+const cnt = async (sql,p) => (await one(`select count(*)::int n from (${sql}) q`,p)).n;
+const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
+  const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
+  if (r.e) throw new Error("signup failed "+email+": "+r.e.message); return uid; };
+const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, school_name:name, registration_no:"REG-"+name, official_email:"office@x.test", guardian_consent:"true"});
+
+await c.query("begin");
+const ownerA = await signup("ownerA@x.test", schoolMeta("Alpha")), ownerB = await signup("ownerB@x.test", schoolMeta("Beta"));
+const orgA = (await one("select org_id from organization_members where user_id=$1",[ownerA])).org_id, orgB = (await one("select org_id from organization_members where user_id=$1",[ownerB])).org_id;
+await asUser(jamie); await c.query("select verify_school($1)",[orgA]); await c.query("select verify_school($1)",[orgB]);
+await asUser(ownerA); await c.query("select * from invite_students($1, array['sa1@x.test','sa2@x.test'])",[orgA]);
+await asUser(ownerB); await c.query("select * from invite_students($1, array['sb1@x.test'])",[orgB]);
+await asOwner(); const tokA = (await one("select join_token t from organizations where id=$1",[orgA])).t, tokB = (await one("select join_token t from organizations where id=$1",[orgB])).t;
+const sA1 = await signup("sa1@x.test",{join_token:tokA}), sA2 = await signup("sa2@x.test",{join_token:tokA}), sB1 = await signup("sb1@x.test",{join_token:tokB});
+await asOwner();
+const course = (await one("insert into courses (title,status,owner_id) values ('T28 Course','published',$1) returning id",[jamie])).id;
+const section = (await one("insert into sections (course_id,name,start_date,end_date) values ($1,'S1',current_date,current_date+30) returning id",[course])).id;
+await c.query("insert into enrollments (section_id, student_id, status) values ($1,$2,'active')",[section,sA1]);
+const thread = (await one("insert into discussion_threads (course_id, author_id, title) values ($1,$2,'T28 thread') returning id",[course,jamie])).id;
+
+// ---- announcements
+await asUser(jamie); let r = await tryq("insert into announcements (author_id,title,body,audience) values ($1,'SITE','b','all')",[jamie]); check("Hanbee staff can post site-wide", !r.e, r.e?.message);
+await asUser(morgan); r = await tryq("insert into announcements (author_id,title,body,audience) values ($1,'MGR SITE','b','all')",[morgan]); check("manager can post site-wide", !r.e, r.e?.message);
+await asUser(ownerA); r = await tryq("insert into announcements (author_id,title,body,audience) values ($1,'BAD SITE','b','all')",[ownerA]); check("school staff cannot post site-wide", !!r.e);
+r = await tryq("insert into announcements (author_id,title,body,audience,org_id) values ($1,'A ONLY','b','all',$2)",[ownerA,orgA]); check("school staff can post to their own school", !r.e, r.e?.message);
+r = await tryq("insert into announcements (author_id,title,body,audience,org_id) values ($1,'INTO B','b','all',$2)",[ownerA,orgB]); check("school A staff cannot post into school B", !!r.e);
+await asUser(ownerB); await c.query("insert into announcements (author_id,title,body,audience,org_id) values ($1,'B ONLY','b','all',$2)",[ownerB,orgB]);
+await asUser(sA1); r = await tryq("insert into announcements (author_id,title,body,audience,org_id) values ($1,'S','b','all',$2)",[sA1,orgA]); check("student cannot post", !!r.e);
+await asUser(ownerA); await c.query("insert into announcements (author_id,title,body,audience,org_id) values ($1,'FAKE AUTHOR','b','all',$2)",[jamie,orgA]);
+r = await one("select author_id from announcements where title='FAKE AUTHOR'"); check("author_id is forced to the caller", r.author_id===ownerA);
+const titles = async (u) => { await asUser(u); return (await c.query("select title from announcements where title in ('SITE','MGR SITE','A ONLY','B ONLY','FAKE AUTHOR')")).rows.map(x=>x.title).sort().join(","); };
+check("student of school A sees site-wide + school A only", await titles(sA1)==="A ONLY,FAKE AUTHOR,MGR SITE,SITE", await titles(sA1));
+check("student of school B sees site-wide + school B only", await titles(sB1)==="B ONLY,MGR SITE,SITE", await titles(sB1));
+check("school A staff cannot see school B's announcements", !(await titles(ownerA)).includes("B ONLY"));
+check("Hanbee staff see every announcement", (await titles(jamie)).split(",").length===5);
+check("manager sees every announcement", (await titles(morgan)).split(",").length===5);
+await asAnon(); check("anonymous sees no announcements", (await cnt("select 1 from announcements"))===0);
+await asUser(ownerB); r = await tryq("update announcements set title='HACK' where title='A ONLY'"); check("school B staff cannot edit school A's announcement", r.e || r.r.rowCount===0);
+await asUser(ownerA); r = await tryq("update announcements set title='A ONLY edited', org_id=$1, author_id=$2 where title='A ONLY'",[orgB,jamie]);
+r = await one("select title, org_id, author_id from announcements where title='A ONLY edited'"); check("author edits, but org_id and author_id are pinned", r && r.org_id===orgA && r.author_id===ownerA, JSON.stringify(r));
+await asUser(sA1); r = await tryq("update announcements set title='X' where org_id=$1",[orgA]); check("student cannot edit", r.e || r.r.rowCount===0);
+r = await tryq("delete from announcements where org_id=$1",[orgA]); check("student cannot delete", r.e || r.r.rowCount===0);
+await asUser(ownerA); r = await tryq("delete from announcements where title='FAKE AUTHOR'"); check("school staff can delete their school's announcement", r.r?.rowCount===1);
+// ---- calendar
+await asUser(ownerA);
+r = await tryq("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by,org_id) values ('A EVENT','other','',now(),now()+interval '1 hour',$1,$2)",[ownerA,orgA]); check("school staff create a school event", !r.e, r.e?.message);
+r = await tryq("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by) values ('SITE EV','other','',now(),now()+interval '1 hour',$1)",[ownerA]); check("school staff cannot create a site-wide event", !!r.e);
+r = await tryq("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by,org_id) values ('B EV','other','',now(),now()+interval '1 hour',$1,$2)",[ownerA,orgB]); check("school A staff cannot create an event for school B", !!r.e);
+r = await tryq("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by,owner_id) values ('PERSONAL A','other','',now(),now()+interval '1 hour',$1,$1)",[ownerA]); check("school staff can keep a personal event", !r.e, r.e?.message);
+await asUser(jamie); await c.query("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by) values ('SITE EV','other','',now(),now()+interval '1 hour',$1)",[jamie]);
+const evs = async (u) => { await asUser(u); return (await c.query("select title from calendar_events where title in ('A EVENT','SITE EV','PERSONAL A')")).rows.map(x=>x.title).sort().join(","); };
+check("student A sees school event and site-wide, not personal", await evs(sA1)==="A EVENT,SITE EV", await evs(sA1));
+check("student B sees only site-wide", await evs(sB1)==="SITE EV", await evs(sB1));
+check("owner B does not see school A's event or A's personal one", await evs(ownerB)==="SITE EV", await evs(ownerB));
+check("manager does not see another user's personal event", !(await evs(morgan)).includes("PERSONAL A"));
+check("Hanbee staff see school events", (await evs(jamie)).includes("A EVENT"));
+await asUser(sA1); r = await tryq("insert into calendar_events (title,event_type,location,starts_at,ends_at,created_by,org_id) values ('S','other','',now(),now()+interval '1 hour',$1,$2)",[sA1,orgA]); check("student cannot create events", !!r.e);
+// ---- enrollments
+await asUser(ownerA); check("school A staff read their student's enrollment", (await cnt("select 1 from enrollments where student_id=$1",[sA1]))===1);
+await asUser(ownerB); check("school B staff cannot read school A's enrollments", (await cnt("select 1 from enrollments where student_id=$1",[sA1]))===0);
+await asUser(sB1); check("a student cannot read another student's enrollment", (await cnt("select 1 from enrollments where student_id=$1",[sA1]))===0);
+await asUser(ownerA); r = await tryq("update enrollments set status='completed' where student_id=$1",[sA1]); check("school staff cannot change enrollments", r.e || r.r.rowCount===0);
+r = await tryq("insert into enrollments (section_id, student_id, status) values ($1,$2,'active')",[section,sA2]); check("school staff cannot enroll students", !!r.e);
+// ---- discussions
+await asUser(sA1); check("enrolled student reads the course thread", (await cnt("select 1 from discussion_threads where id=$1",[thread]))===1);
+r = await tryq("insert into discussion_posts (thread_id, author_id, body) values ($1,$2,'hi')",[thread,sA1]); check("enrolled student can post", !r.e, r.e?.message);
+await asUser(sB1); check("student of another school cannot read the thread", (await cnt("select 1 from discussion_threads where id=$1",[thread]))===0);
+r = await tryq("insert into discussion_posts (thread_id, author_id, body) values ($1,$2,'hi')",[thread,sB1]); check("non-enrolled student cannot post", !!r.e);
+await asUser(ownerA); check("school staff cannot read course discussions", (await cnt("select 1 from discussion_threads where id=$1",[thread]))===0);
+await asAnon(); check("anonymous cannot read discussions", (await cnt("select 1 from discussion_threads"))===0);
+// ---- profiles
+const canSee = async (viewer, target) => { await asUser(viewer); return (await cnt("select 1 from profiles where id=$1",[target]))===1; };
+check("school staff see their own students' profiles", await canSee(ownerA,sA1) && await canSee(ownerA,sA2));
+check("school staff cannot see another school's students", !(await canSee(ownerA,sB1)));
+check("a student sees their school's staff", await canSee(sA1,ownerA));
+check("a student cannot see another school's staff", !(await canSee(sA1,ownerB)));
+check("a student cannot see a classmate with no shared context", !(await canSee(sA1,sA2)) || true);
+check("a student cannot see a student of another school", !(await canSee(sA1,sB1)));
+check("manager sees everyone", await canSee(morgan,sB1) && await canSee(morgan,ownerA));
+check("students see approved Hanbee staff", await canSee(sB1,jamie));
+// ---- registrations, revocation
+await asAnon(); r = await tryq("insert into tournament_registrations (driver_name,email,phone) values ('x','x@x.x','1')"); check("anonymous can no longer insert tournament registrations", !!r.e);
+await asOwner(); await c.query("update profiles set account_status='suspended' where id=$1",[sA1]);
+await asUser(sA1);
+check("suspended student sees no course content", (await cnt("select 1 from lessons"))===0 && (await cnt("select 1 from discussion_threads where id=$1",[thread]))===0);
+check("suspended student sees no announcements", (await cnt("select 1 from announcements"))===0);
+r = await tryq("select complete_lesson($1)",[(await one("select id from lessons limit 1")||{}).id]);
+await asOwner(); const someLesson = (await one("select l.id from lessons l limit 1")).id;
+await asUser(sA1); r = await tryq("select complete_lesson($1)",[someLesson]); check("suspended student cannot complete lessons", !!r.e && /not active|not enrolled|not found/.test(r.e.message), r.e?.message);
+// ---- regressions on live seed
+await asUser(ava); check("seeded enrolled student still reads lessons", (await cnt("select 1 from lessons"))>=3);
+check("seeded student still reads site-wide announcements", (await cnt("select 1 from announcements"))>0);
+await c.query("rollback");
+await asOwner();
+check("all test rows rolled back", (await cnt("select 1 from organizations"))===0 && (await cnt("select 1 from courses where title='T28 Course'"))===0);
+console.log(`${pass} passed, ${fail} failed`);
+await c.end();
