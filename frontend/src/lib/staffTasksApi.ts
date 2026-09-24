@@ -98,3 +98,13 @@ export async function deleteTask(id: string): Promise<boolean> {
   const { error } = await supabase.from("staff_tasks").delete().eq("id", id);
   return !error;
 }
+
+/** Additive: edit a task's title and/or due date (null clears the date). Own tasks only per RLS. */
+export async function updateTask(id: string, patch: { title?: string; dueDate?: string | null }): Promise<boolean> {
+  if (!supabase) return false;
+  const dbPatch: Record<string, string | null> = {};
+  if (patch.title !== undefined) dbPatch.title = patch.title;
+  if (patch.dueDate !== undefined) dbPatch.due_date = patch.dueDate;
+  const { error } = await supabase.from("staff_tasks").update(dbPatch).eq("id", id);
+  return !error;
+}
