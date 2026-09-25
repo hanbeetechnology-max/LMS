@@ -12,7 +12,7 @@ import {
   type SchoolDirectoryRow,
 } from "../../lib/portalApi";
 import { Card, EmptyState, ErrorBlock, LoadingBlock, PageHeader, formatDate, useAsync } from "../kit";
-import { ConfirmDialog, actionButton } from "./ConfirmDialog";
+import { ConfirmDialog, actionButton, primaryButton } from "./ConfirmDialog";
 
 export function VerificationsPage() {
   const { showToast } = useToast();
@@ -22,11 +22,14 @@ export function VerificationsPage() {
   });
   const [busy, setBusy] = useState<string | null>(null);
   const [rejectStaff, setRejectStaff] = useState<PendingHanbeeStaff | null>(null);
+  const [approveStaff, setApproveStaff] = useState<PendingHanbeeStaff | null>(null);
+  const [schoolDecision, setSchoolDecision] = useState<{ school: SchoolDirectoryRow; verdict: "verify" | "reject" } | null>(null);
 
   async function decideSchool(school: SchoolDirectoryRow, verdict: "verify" | "reject") {
     setBusy(school.orgId);
     const out = verdict === "verify" ? await verifySchool(school.orgId) : await rejectSchool(school.orgId);
     setBusy(null);
+    setSchoolDecision(null);
     if (!out) showToast("That did not go through. Try again.", "error");
     else if (out.result === "already_decided") showToast(`Already decided by ${out.by ?? "another manager"}`, "error");
     else showToast(out.result === "verified" ? `${school.name} verified` : `${school.name} rejected`);
@@ -37,6 +40,7 @@ export function VerificationsPage() {
     setBusy(p.id);
     const ok = await approveHanbeeStaff(p.id);
     setBusy(null);
+    setApproveStaff(null);
     showToast(ok ? `${p.fullName} approved` : "That did not go through. Try again.", ok ? "success" : "error");
     reload();
   }
@@ -57,9 +61,9 @@ export function VerificationsPage() {
     <>
       <PageHeader title="Verifications" subtitle="Schools and Hanbee staff waiting for approval. The first decision wins." />
 
-      <h2 className="mb-2 font-display text-lg font-semibold text-(--color-ink)">Schools waiting for verification</h2>
+      <h2 className="mb-3 text-base font-semibold text-(--color-ink)">Schools waiting for verification</h2>
       {data.schools.length === 0 ? (
-        <EmptyState title="Nothing waiting for you" body="New school registrations will appear here." />
+        <div className="mb-8"><EmptyState title="Nothing waiting for you" body="New school registrations will appear here." /></div>
       ) : (
         <ul className="mb-8 grid gap-3">
           {data.schools.map((s) => (
@@ -76,8 +80,8 @@ export function VerificationsPage() {
                   </Link>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy === s.orgId} onClick={() => decideSchool(s, "verify")} className={actionButton}>Verify</button>
-                  <button type="button" disabled={busy === s.orgId} onClick={() => decideSchool(s, "reject")} className={actionButton}>Reject</button>
+                  <button type="button" disabled={busy === s.orgId} onClick={() => setSchoolDecision({ school: s, verdict: "verify" })} className={primaryButton}>Verify</button>
+                  <button type="button" disabled={busy === s.orgId} onClick={() => setSchoolDecision({ school: s, verdict: "reject" })} className={actionButton}>Reject</button>
                 </div>
               </Card>
             </li>
@@ -85,7 +89,7 @@ export function VerificationsPage() {
         </ul>
       )}
 
-      <h2 className="mb-2 font-display text-lg font-semibold text-(--color-ink)">Hanbee staff applications</h2>
+      <h2 className="mb-3 text-base font-semibold text-(--color-ink)">Hanbee staff applications</h2>
       {data.staff.length === 0 ? (
         <EmptyState title="Nothing waiting for you" body="Staff applications will appear here." />
       ) : (
@@ -99,7 +103,7 @@ export function VerificationsPage() {
                   <p className="text-xs text-(--color-mist)">Applied {formatDate(p.createdAt)}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy === p.id} onClick={() => approve(p)} className={actionButton}>Approve</button>
+                  <button type="button" disabled={busy === p.id} onClick={() => setApproveStaff(p)} className={primaryButton}>Approve</button>
                   <button type="button" disabled={busy === p.id} onClick={() => setRejectStaff(p)} className={actionButton}>Reject</button>
                 </div>
               </Card>
@@ -108,6 +112,26 @@ export function VerificationsPage() {
         </ul>
       )}
 
+      {schoolDecision && (
+        <ConfirmDialog
+          title={`${schoolDecision.verdict === "verify" ? "Verify" : "Reject"} ${schoolDecision.school.name}?`}
+          body={schoolDecision.verdict === "verify" ? "The school becomes active and its owner can start inviting students. If another manager decides first, theirs stands." : "The school registration will be turned down. If another manager decides first, theirs stands."}
+          confirmLabel={schoolDecision.verdict === "verify" ? "Verify school" : "Reject school"}
+          busy={busy === schoolDecision.school.orgId}
+          onConfirm={() => decideSchool(schoolDecision.school, schoolDecision.verdict)}
+          onCancel={() => setSchoolDecision(null)}
+        />
+      )}
+      {approveStaff && (
+        <ConfirmDialog
+          title={`Approve ${approveStaff.fullName}?`}
+          body="They will be able to sign in as Hanbee staff."
+          confirmLabel="Approve"
+          busy={busy === approveStaff.id}
+          onConfirm={() => approve(approveStaff)}
+          onCancel={() => setApproveStaff(null)}
+        />
+      )}
       {rejectStaff && (
         <ConfirmDialog
           title={`Reject ${rejectStaff.fullName}?`}

@@ -22,7 +22,7 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onKeyDown={(e) => e.key === "Escape" && onCancel()}>
       <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-2xl border border-(--color-line) bg-(--color-paper) p-6">
-        <h2 className="font-display text-lg font-semibold text-(--color-ink)">{title}</h2>
+        <h2 className="text-lg font-semibold text-(--color-ink)">{title}</h2>
         <p className="mt-2 text-sm text-(--color-slate)">{body}</p>
         {askReason && (
           <label className="mt-4 block text-sm text-(--color-ink)">
@@ -35,14 +35,14 @@ export function ConfirmDialog({
           </label>
         )}
         <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button type="button" autoFocus onClick={onCancel} className="min-h-11 rounded-xl border border-(--color-line) px-4 text-sm font-medium text-(--color-ink)">
+          <button type="button" autoFocus onClick={onCancel} className="min-h-11 rounded-full border border-(--color-line) px-5 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)">
             Cancel
           </button>
           <button
             type="button"
             disabled={busy}
             onClick={() => onConfirm(reason.trim() || undefined)}
-            className="min-h-11 rounded-xl bg-(--color-ink) px-4 text-sm font-semibold text-(--color-paper) disabled:opacity-50"
+            className="min-h-11 rounded-full bg-(--color-accent) px-5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent) disabled:opacity-50"
           >
             {confirmLabel}
           </button>
@@ -53,4 +53,7 @@ export function ConfirmDialog({
 }
 
 export const actionButton =
-  "min-h-11 rounded-xl border border-(--color-line) px-3 text-sm font-medium text-(--color-ink) hover:bg-(--color-cloud) disabled:opacity-50";
+  "min-h-11 rounded-full border border-(--color-line) bg-(--color-paper) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent) disabled:opacity-50";
+
+export const primaryButton =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-accent) px-5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent) disabled:opacity-50";
