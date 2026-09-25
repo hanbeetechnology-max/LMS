@@ -42,16 +42,16 @@ export function DataTable<T>({
   if (rows.length === 0) return <EmptyState title={emptyTitle} body={emptyBody} />;
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-(--color-line)">
-      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+    <div className="overflow-x-auto rounded-xl border border-(--color-line) bg-(--color-card)">
+      <table className="w-full min-w-[560px] border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-(--color-line) bg-(--color-cloud)">
+          <tr className="border-b border-(--color-line)">
             {columns.map((col) => {
               const active = sort?.key === col.key;
               return (
-                <th key={col.key} scope="col" className={`px-4 py-3 font-mono text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist) ${col.className ?? ""}`}>
+                <th key={col.key} scope="col" className={`px-4 py-3 text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist) ${col.className ?? ""}`}>
                   {col.sortValue ? (
-                    <button type="button" onClick={() => setSort({ key: col.key, dir: active && sort?.dir === 1 ? -1 : 1 })} className="inline-flex items-center gap-1 hover:text-(--color-ink)">
+                    <button type="button" onClick={() => setSort({ key: col.key, dir: active && sort?.dir === 1 ? -1 : 1 })} className="inline-flex min-h-11 items-center gap-1 uppercase tracking-[0.08em] hover:text-(--color-ink)">
                       {col.header}
                       <span aria-hidden="true">{active ? (sort?.dir === 1 ? "▲" : "▼") : ""}</span>
                     </button>

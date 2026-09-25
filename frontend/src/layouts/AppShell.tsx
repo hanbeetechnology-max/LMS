@@ -1,4 +1,4 @@
-import { type ComponentType, useEffect, useRef, useState } from "react";
+﻿import { type ComponentType, useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Logo } from "../components/landing/Logo";
@@ -81,7 +81,7 @@ function GlobalSearch({ navItems }: { navItems: NavItem[] }) {
         onKeyDown={(e) => {
           if (e.key === "Escape") setQuery("");
         }}
-        placeholder="Search…"
+        placeholder="Search..."
         className="w-full rounded-full border border-(--color-line) bg-(--color-cloud) py-2 pl-9 pr-4 text-sm text-(--color-ink) outline-none transition-colors duration-200 placeholder:text-(--color-mist) focus:border-(--color-violet) focus:bg-(--color-paper)"
       />
       {focused && query.trim() && (
@@ -134,7 +134,7 @@ function ThemeToggle() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Theme settings"
-        className="flex h-9 w-9 items-center justify-center rounded-full text-(--color-ink-soft) transition-colors hover:bg-(--color-cloud)"
+        className="flex h-11 w-11 items-center justify-center rounded-full text-(--color-ink-soft) transition-colors hover:bg-(--color-cloud)"
       >
         <TriggerIcon />
       </button>
@@ -243,14 +243,14 @@ function NotificationBell() {
           setOpen((v) => !v);
           // Ask for OS-level notification permission on the first explicit
           // interaction with this feature, not unconditionally on every
-          // page load — an unsolicited prompt on mount gets auto-denied by
+          // page load - an unsolicited prompt on mount gets auto-denied by
           // modern browsers, burning the one real chance to ask.
           if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission();
         }}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full text-(--color-ink-soft) transition-colors hover:bg-(--color-cloud)"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full text-(--color-ink-soft) transition-colors hover:bg-(--color-cloud)"
       >
         <BellIcon />
         {unreadCount > 0 && (
@@ -334,7 +334,7 @@ function ProfileMenu({ settingsPath }: { settingsPath: string }) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={profile ? `Account menu for ${profile.fullName}` : "Account menu"}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-(--color-ink) font-mono text-sm font-semibold text-(--color-paper)"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-(--color-ink) font-mono text-sm font-semibold text-(--color-paper)"
       >
         {initial}
       </button>
@@ -398,9 +398,9 @@ export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }
     activeItem?.label ?? (fallbackTitle ? fallbackTitle.charAt(0).toUpperCase() + fallbackTitle.slice(1) : "Dashboard");
 
   return (
-    <div className="flex min-h-screen bg-(--color-paper)">
+    <div className="flex min-h-screen bg-(--color-canvas)">
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-(--color-line) bg-(--color-paper) transition-transform duration-300 lg:static lg:translate-x-0 print:hidden ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-(--color-line) bg-(--color-card) transition-transform duration-300 lg:static lg:translate-x-0 print:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -412,7 +412,7 @@ export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }
             type="button"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-(--color-ink-soft) hover:bg-(--color-cloud) lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-(--color-ink-soft) hover:bg-(--color-cloud) lg:hidden"
           >
             <CloseIcon />
           </button>
@@ -425,10 +425,10 @@ export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }
               end={end}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                `flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
                   isActive
-                    ? "bg-(--color-ink) text-(--color-paper)"
-                    : "text-(--color-ink-soft) hover:bg-(--color-cloud)"
+                    ? "bg-(--color-accent)/10 text-(--color-accent)"
+                    : "text-(--color-ink-soft) hover:bg-(--color-canvas)"
                 }`
               }
             >
@@ -450,18 +450,18 @@ export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-(--color-line) bg-(--color-paper)/90 px-6 backdrop-blur-md print:hidden">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-(--color-line) bg-(--color-card) px-4 sm:px-6 print:hidden">
           <div className="flex items-center gap-3">
             <button
               ref={mobileMenuTriggerRef}
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-(--color-ink-soft) hover:bg-(--color-cloud) lg:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-(--color-ink-soft) hover:bg-(--color-cloud) lg:hidden"
               aria-label="Open menu"
             >
               <MenuIcon />
             </button>
-            <h1 className="font-display text-lg font-semibold text-(--color-ink)">{pageTitle}</h1>
+            <p className="text-base font-semibold text-(--color-ink)">{pageTitle}</p>
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-4">
@@ -472,9 +472,9 @@ export function AppShell({ navItems, settingsPath, topSlot, mainClassName = "" }
           </div>
         </header>
 
-        {topSlot && <div className="border-b border-(--color-line) bg-(--color-paper) px-6 py-3 lg:px-10 print:hidden">{topSlot}</div>}
+        {topSlot && <div className="px-4 pt-5 sm:px-6 lg:px-10 print:hidden">{topSlot}</div>}
 
-        <main className={`flex-1 px-6 py-8 lg:px-10 ${mainClassName}`}>
+        <main className={`flex-1 px-4 py-6 sm:px-6 lg:px-10 ${mainClassName}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

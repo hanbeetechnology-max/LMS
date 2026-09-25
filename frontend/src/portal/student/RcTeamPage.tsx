@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useAuth } from "../../lib/AuthProvider";
 import { useToast } from "../../lib/ToastProvider";
 import { ScanToPayCard } from "../../components/ui/ScanToPayCard";
@@ -12,8 +12,8 @@ import {
   type TeamMember,
   type Tournament,
 } from "../../lib/tournamentPortalApi";
-import { Badge, Card, EmptyState, ErrorBlock, LoadingBlock, PageHeader, StatusBadge, formatDate, useAsync } from "../kit";
-import { TEAM_STATUS_TEXT, useSchoolGone } from "./shared";
+import { Badge, Card, EmptyState, ErrorBlock, Eyebrow, LoadingBlock, PageHeader, StatusBadge, formatDate, useAsync } from "../kit";
+import { TEAM_STATUS_TEXT, primaryBtn, useSchoolGone } from "./shared";
 
 interface TeamData {
   tournament: Tournament | null;
@@ -68,7 +68,7 @@ export function RcTeamPage() {
     <>
       <PageHeader title="My team" subtitle="Your team for the tournament and its status." />
       {gone ? (
-        <EmptyState title="Tournament is not available" body="Your school is no longer active. Switch to a solo account to enter on your own." />
+        <EmptyState title="Tournament is not available" body="Your school is no longer active. Use the notice above to choose what happens next." />
       ) : loading && !data ? (
         <LoadingBlock />
       ) : error ? (
@@ -79,19 +79,19 @@ export function RcTeamPage() {
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <div className="flex items-center justify-between gap-2">
-              <p className="font-mono text-xs uppercase tracking-[0.1em] text-(--color-mist)">{data.team.tournamentTitle}</p>
+              <Eyebrow>{data.team.tournamentTitle}</Eyebrow>
               <StatusBadge status={data.team.status} />
             </div>
-            <h2 className="mt-2 font-display text-2xl font-semibold text-(--color-ink)">{data.team.name}</h2>
+            <h2 className="mt-2 text-xl font-semibold text-(--color-ink)">{data.team.name}</h2>
             <p className="mt-2 text-sm text-(--color-slate)">{TEAM_STATUS_TEXT[data.team.status]}</p>
             <p className="mt-1 text-xs text-(--color-mist)">
-              {data.team.schoolName ? `School: ${data.team.schoolName}. ` : "Solo entry. "}Created {formatDate(data.team.createdAt)}.
+              {data.team.schoolName ? `School: ${data.team.schoolName}. ` : "Individual entry. "}Created {formatDate(data.team.createdAt)}.
             </p>
             {!isSolo && <p className="mt-3 text-sm text-(--color-slate)">Your school staff manage the team. You can see it here but not change it.</p>}
             <p className="mt-3 text-xs text-(--color-mist)">HANBEE checks every payment. Nothing is confirmed until it says Verified.</p>
           </Card>
           <Card>
-            <h2 className="font-display text-lg font-semibold text-(--color-ink)">Members</h2>
+            <h2 className="text-base font-semibold text-(--color-ink)">Members</h2>
             {data.members.length === 0 ? (
               <p className="mt-3 text-sm text-(--color-slate)">No members yet.</p>
             ) : (
@@ -107,14 +107,14 @@ export function RcTeamPage() {
           </Card>
           {isSolo && data.team.status === "draft" && (
             <div className="space-y-4 lg:col-span-2">
-              <h2 className="font-display text-lg font-semibold text-(--color-ink)">Send your application</h2>
+              <h2 className="text-base font-semibold text-(--color-ink)">Send your application</h2>
               <ScanToPayCard amountLabel="tournament entry fee" confirmed={declared} onConfirmedChange={setDeclared} />
               <p className="text-sm text-(--color-slate)">Payment is optional for now. HANBEE verifies payment by hand, so ticking the box only tells them you paid.</p>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void apply(data.team!.id)}
-                className="min-h-11 rounded-full bg-(--color-ink) px-6 text-sm font-semibold text-(--color-paper) disabled:opacity-60"
+                className={primaryBtn}
               >
                 {busy ? "Sending..." : "Apply"}
               </button>
@@ -123,7 +123,7 @@ export function RcTeamPage() {
         </div>
       ) : isSolo ? (
         <Card>
-          <h2 className="font-display text-xl font-semibold text-(--color-ink)">{data.tournament.title}</h2>
+          <h2 className="text-xl font-semibold text-(--color-ink)">{data.tournament.title}</h2>
           <p className="mt-2 max-w-xl text-sm text-(--color-slate)">
             You are not part of a school, so you can enter as a team of one. First we create your team, then you send your application.
           </p>
@@ -131,7 +131,7 @@ export function RcTeamPage() {
             type="button"
             disabled={busy}
             onClick={() => void enter(data.tournament!.id)}
-            className="mt-4 min-h-11 rounded-full bg-(--color-ink) px-6 text-sm font-semibold text-(--color-paper) disabled:opacity-60"
+            className={`mt-4 ${primaryBtn}`}
           >
             {busy ? "Creating..." : "Enter as a team of one"}
           </button>
