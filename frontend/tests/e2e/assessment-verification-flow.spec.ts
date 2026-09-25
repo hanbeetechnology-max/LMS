@@ -51,7 +51,7 @@ async function gotoColorTheoryLesson(page: Page) {
   }
   await expect(nextLink).toBeVisible();
   await nextLink.click();
-  await expect(page.getByRole("heading", { name: "Color Theory" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Color Theory", exact: true })).toBeVisible();
 }
 
 test("student submits a knowledge check and lands in pending verification, even with a wrong answer", async ({ page }) => {
