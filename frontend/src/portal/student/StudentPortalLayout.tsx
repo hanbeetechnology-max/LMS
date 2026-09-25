@@ -11,7 +11,7 @@ import {
   TrophyIcon,
 } from "../../components/landing/icons";
 import { useAuth } from "../../lib/AuthProvider";
-import { convertToSolo } from "../../lib/portalApi";
+import { convertToSolo, joinSchool } from "../../lib/portalApi";
 import { useToast } from "../../lib/ToastProvider";
 import { SlideSwitcher } from "../kit";
 
@@ -47,10 +47,19 @@ const TABS = [
 
 type Side = "rc" | "lms";
 
+/** Accepts a full /join/<token> link or just the token. */
+function extractToken(input: string): string {
+  const text = input.trim();
+  const match = text.match(/\/join\/([^/?#\s]+)/);
+  return (match ? match[1] : text.split(/[?#\s]/)[0]).trim();
+}
+
 function SchoolStateBanner() {
   const { profile, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
+  const [link, setLink] = useState("");
+  const [message, setMessage] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
   const school = profile?.school;
   if (!profile || !school || profile.isSolo) return null;
 
@@ -58,37 +67,91 @@ function SchoolStateBanner() {
   const suspended = !closed && school.status === "suspended";
   if (!closed && !suspended) return null;
 
-  async function switchToSolo() {
+  async function join() {
+    const token = extractToken(link);
+    if (!token) {
+      setMessage({ tone: "error", text: "This school link is not valid." });
+      return;
+    }
     setBusy(true);
+    setMessage(null);
+    const res = await joinSchool(token);
+    if (res.ok) {
+      await refreshProfile();
+      showToast(`You joined ${res.schoolName ?? "the new school"}.`);
+    } else {
+      const raw = (res.error ?? "").toLowerCase();
+      const text = raw.includes("invite") || raw.includes("email")
+        ? "Your email has not been invited by that school."
+        : "This school link is not valid.";
+      setMessage({ tone: "error", text });
+    }
+    setBusy(false);
+  }
+
+  async function goSolo() {
+    setBusy(true);
+    setMessage(null);
     const ok = await convertToSolo();
     if (ok) {
       await refreshProfile();
       showToast("You now have a solo account.");
     } else {
-      showToast("Could not switch. Please try again in a moment.", "error");
+      setMessage({ tone: "error", text: "Could not switch. Please try again in a moment." });
     }
     setBusy(false);
   }
 
   return (
-    <div role="status" className="mt-3 rounded-2xl border border-(--color-amber-deep)/30 bg-(--color-amber-soft) px-4 py-3 text-sm text-(--color-ink)">
+    <div role="status" className="mt-4 rounded-xl border border-(--color-amber-deep)/30 bg-(--color-amber-soft) p-4 text-sm text-(--color-ink) sm:p-5">
       {closed ? (
         <>
           <p className="font-semibold">Your school is no longer active.</p>
           <p className="mt-1 text-(--color-ink-soft)">
-            You can keep learning. To take part in the tournament, switch to a solo account or wait for another school to invite you.
+            Your account stays, so paid participation and course progress are not lost, and your record stays under {school.name}. Choose what to do next.
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void switchToSolo()}
-              disabled={busy}
-              className="min-h-11 rounded-full bg-(--color-ink) px-5 text-sm font-semibold text-(--color-paper) disabled:opacity-60"
-            >
-              {busy ? "Switching..." : "Switch to solo account"}
-            </button>
-            <span className="text-xs text-(--color-slate)">Your record stays under {school.name}.</span>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-(--color-line) bg-(--color-card) p-4">
+              <p className="font-medium">Join another school</p>
+              <label htmlFor="join-link" className="mt-2 block text-xs text-(--color-slate)">
+                Invitation link or code from the new school
+              </label>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <input
+                  id="join-link"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  placeholder="https://.../join/abc123 or abc123"
+                  className="min-h-11 min-w-0 flex-1 rounded-lg border border-(--color-line) bg-(--color-card) px-3 text-sm text-(--color-ink)"
+                />
+                <button
+                  type="button"
+                  onClick={() => void join()}
+                  disabled={busy || !link.trim()}
+                  className="min-h-11 rounded-lg bg-(--color-accent) px-5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {busy ? "Working..." : "Join school"}
+                </button>
+              </div>
+            </div>
+            <div className="rounded-lg border border-(--color-line) bg-(--color-card) p-4">
+              <p className="font-medium">Continue as a solo account</p>
+              <p className="mt-2 text-xs text-(--color-slate)">You keep your courses and can enter tournaments on your own.</p>
+              <button
+                type="button"
+                onClick={() => void goSolo()}
+                disabled={busy}
+                className="mt-3 min-h-11 rounded-lg border border-(--color-line) px-5 text-sm font-semibold text-(--color-ink) hover:bg-(--color-canvas) disabled:opacity-60"
+              >
+                Continue as solo
+              </button>
+            </div>
           </div>
+          {message && (
+            <p role={message.tone === "error" ? "alert" : "status"} className={`mt-3 font-medium ${message.tone === "error" ? "text-(--color-error)" : "text-(--color-teal-deep)"}`}>
+              {message.text}
+            </p>
+          )}
         </>
       ) : (
         <>
@@ -114,12 +177,9 @@ export function StudentPortalLayout() {
     <AppShell
       navItems={side === "rc" ? RC_NAV : LMS_NAV}
       settingsPath="/student/settings"
-      mainClassName={side === "rc" ? "rc-theme bg-(--color-paper) text-(--color-ink)" : ""}
       topSlot={
         <div>
-          <div className="flex justify-center sm:justify-start">
-            <SlideSwitcher label="Student area" tabs={TABS} value={side} onChange={(id) => navigate(id === "rc" ? "/student/rc" : "/student/lms")} />
-          </div>
+          <SlideSwitcher label="Student area" tabs={TABS} value={side} onChange={(id) => navigate(id === "rc" ? "/student/rc" : "/student/lms")} />
           <SchoolStateBanner />
         </div>
       }

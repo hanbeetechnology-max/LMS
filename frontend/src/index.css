@@ -18,6 +18,10 @@
   --color-paper: #f7f8fc;
   --color-cloud: #eef1f7;
   --color-line: rgba(23, 26, 36, 0.12);
+  /* Dashboard template look: warm page, white cards, one blue accent. */
+  --color-canvas: #f6f4ef;
+  --color-card: #ffffff;
+  --color-accent: #2563eb;
 
   --color-ink-fixed: oklch(0.98 0.005 265);
   --color-paper-fixed: oklch(0.12 0.015 265);
@@ -89,11 +93,15 @@ html:not([data-theme]) {
 
 html[data-theme="dark"] {
   color-scheme: dark;
+  --color-canvas: #0b0f17;
+  --color-card: #111827;
 }
 
 @media (prefers-color-scheme: dark) {
   html:not([data-theme]) {
     color-scheme: dark;
+    --color-canvas: #0b0f17;
+    --color-card: #111827;
     --color-paper: #0b0f17;
     --color-cloud: #111827;
     --color-ink: #f9fafb;
