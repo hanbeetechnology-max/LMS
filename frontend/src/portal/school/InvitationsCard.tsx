@@ -4,7 +4,7 @@ import { revokeInvitation, type SchoolInvitation } from "../../lib/portalApi";
 import { Card, DataTable, ErrorBlock, formatDate, LoadingBlock, StatusBadge } from "../kit";
 
 const small =
-  "inline-flex min-h-11 items-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-(--color-violet)";
+  "inline-flex min-h-11 items-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-(--color-accent)";
 
 export function InvitationsCard({
   invitations,
@@ -37,7 +37,8 @@ export function InvitationsCard({
 
   return (
     <Card>
-      <h2 className="font-display text-lg font-semibold text-(--color-ink)">Invitations</h2>
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">Step 3 of 3 · Track who joined</p>
+      <h2 className="mt-1 text-lg font-semibold text-(--color-ink)">Invitations</h2>
       <p className="mt-1 mb-4 text-sm text-(--color-slate)">Every invitation your school has sent, and where it stands.</p>
       {loading ? (
         <LoadingBlock />

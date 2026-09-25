@@ -27,9 +27,9 @@ const STATUS_HELP: Record<string, string> = {
 };
 
 const btn =
-  "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)";
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)";
 const primary =
-  "inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-ink) px-5 text-sm font-semibold text-(--color-paper) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)";
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-accent) px-5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)";
 
 export function SchoolTeamsPage() {
   const { profile } = useAuth();
@@ -88,7 +88,7 @@ export function SchoolTeamsPage() {
               id="tournament-picker"
               value={tournamentId}
               onChange={(e) => setTournamentId(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-violet)"
+              className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-accent)"
             >
               {tournaments.data!.map((t) => (
                 <option key={t.id} value={t.id}>{t.title} ({formatDate(t.startsAt)})</option>
@@ -98,7 +98,7 @@ export function SchoolTeamsPage() {
           </div>
 
           <Card>
-            <h2 className="font-display text-lg font-semibold text-(--color-ink)">Create a team</h2>
+            <h2 className="text-lg font-semibold text-(--color-ink)">Create a team</h2>
             <form onSubmit={create} className="mt-3 flex flex-wrap items-end gap-3">
               <div className="min-w-0 flex-1 basis-56">
                 <label htmlFor="team-name" className="block text-sm font-medium text-(--color-ink)">Team name</label>
@@ -107,7 +107,7 @@ export function SchoolTeamsPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   maxLength={60}
-                  className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-violet)"
+                  className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-accent)"
                 />
               </div>
               <button type="submit" disabled={creating || !name.trim()} className={primary}>{creating ? "Creating..." : "Create team"}</button>
@@ -173,7 +173,7 @@ function TeamCard({ team, addable, onChanged }: { team: Team; tournamentId: stri
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-semibold text-(--color-ink)">{team.name}</h3>
+        <h3 className="text-lg font-semibold text-(--color-ink)">{team.name}</h3>
         <StatusBadge status={team.status} />
       </div>
       <p className="mt-1 text-sm text-(--color-slate)">{STATUS_HELP[team.status] ?? team.status}</p>
