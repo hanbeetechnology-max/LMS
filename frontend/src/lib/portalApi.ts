@@ -158,6 +158,10 @@ export interface SchoolInvitation {
   state: InvitationState;
   createdAt: string;
   expiresAt: string;
+  /** The personal invitation secret. Only used to build a co-teacher's
+   *  `/accept-invite?token=` link; a student's invitation is joined through
+   *  the school link and never needs it. */
+  token: string;
 }
 
 export interface VerifyOutcome {
@@ -306,7 +310,7 @@ export async function fetchSchoolInvitations(orgId: string): Promise<SchoolInvit
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("invitations")
-    .select("id, email, role, accepted, revoked_at, expires_at, created_at")
+    .select("id, email, role, accepted, revoked_at, expires_at, created_at, token")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
   if (error || !data) return [];
@@ -318,6 +322,7 @@ export async function fetchSchoolInvitations(orgId: string): Promise<SchoolInvit
     state: r.accepted ? "joined" : r.revoked_at ? "revoked" : new Date(r.expires_at).getTime() < now ? "expired" : "pending",
     createdAt: r.created_at,
     expiresAt: r.expires_at,
+    token: r.token,
   }));
 }
 

@@ -1,18 +1,37 @@
 import { useState, type FormEvent } from "react";
 import { useToast } from "../../lib/ToastProvider";
 import { inviteSchoolStaff, type SchoolInvitation } from "../../lib/portalApi";
+import { buildInviteMessage } from "../../lib/inviteMail";
 import { Badge, Card, formatDate, StatusBadge } from "../kit";
 
 const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 
 /** Owner only: invite a co-teacher. The database creates a personal invitation. */
-export function TeachersCard({ orgId, invitations, reload }: { orgId: string; invitations: SchoolInvitation[]; reload: () => void }) {
+export function TeachersCard({ orgId, schoolName, invitations, reload }: { orgId: string; schoolName?: string; invitations: SchoolInvitation[]; reload: () => void }) {
   const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const teacherInvites = invitations.filter((i) => i.role === "school_staff");
+
+  function personalLink(token: string) {
+    return `${window.location.origin}/accept-invite?token=${token}`;
+  }
+
+  async function copyLink(token: string) {
+    try {
+      await navigator.clipboard.writeText(personalLink(token));
+      showToast("Invitation link copied");
+    } catch {
+      showToast("Could not copy. Select the link and copy it yourself.", "error");
+    }
+  }
+
+  function mailtoFor(email: string, token: string) {
+    const message = buildInviteMessage({ schoolName: schoolName ?? "your school", joinLink: personalLink(token) });
+    return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(message.subject)}&body=${encodeURIComponent(message.body)}`;
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -30,7 +49,7 @@ export function TeachersCard({ orgId, invitations, reload }: { orgId: string; in
       showToast("Could not invite this teacher.", "error");
       return;
     }
-    setMessage(`Invited ${value}. A personal invitation was created for them. Ask them to check the invitation you send them, then they can sign up with this email address.`);
+    setMessage(`Invited ${value}. A personal invitation was created for them. Use Copy invitation link or Open in mail app below to send it to them. They must sign up with this email address.`);
     showToast("Teacher invited");
     setEmail("");
     reload();
@@ -68,11 +87,21 @@ export function TeachersCard({ orgId, invitations, reload }: { orgId: string; in
               <span className="min-w-0 break-all font-medium text-(--color-ink)">{i.email}</span>
               <StatusBadge status={i.state} />
               <Badge>Sent {formatDate(i.createdAt)}</Badge>
+              {i.state === "pending" && (
+                <span className="ml-auto flex flex-wrap gap-2">
+                  <button type="button" onClick={() => copyLink(i.token)} className="min-h-11 rounded-full border border-(--color-line) px-4 text-xs font-semibold text-(--color-ink) hover:bg-(--color-cloud)">
+                    Copy invitation link
+                  </button>
+                  <a href={mailtoFor(i.email, i.token)} className="inline-flex min-h-11 items-center rounded-full border border-(--color-line) px-4 text-xs font-semibold text-(--color-ink) hover:bg-(--color-cloud)">
+                    Open in mail app
+                  </a>
+                </span>
+              )}
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-(--color-mist)">Personal join links are not shown here. Use Revoke in the invitations list below if you sent one by mistake.</p>
+      <p className="mt-3 text-xs text-(--color-mist)">The link only works for the email address it was created for. Use Revoke in the invitations list below if you sent one by mistake.</p>
     </Card>
   );
 }

@@ -216,7 +216,7 @@ export function SchedulePage() {
   function canEdit(ev: ScopedCalendarEvent) {
     if (!profile) return false;
     if (ev.scope === "personal") return ev.ownerId === profile.id;
-    if (ev.scope === "school") return role === "school_staff" && ev.orgId === orgId;
+    if (ev.scope === "school") return role === "manager" || role === "staff" || (role === "school_staff" && ev.orgId === orgId);
     return role === "staff" || role === "manager";
   }
 

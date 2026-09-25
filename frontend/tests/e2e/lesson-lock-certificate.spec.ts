@@ -6,7 +6,7 @@ async function loginAsStudent(page: import("@playwright/test").Page) {
   await page.getByLabel("Email").fill("ava@student.edu");
   await page.getByLabel("Password").fill("student123");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/student\/dashboard$/);
+  await expect(page).toHaveURL(/\/student\/rc$/);
 }
 
 // Since docs/PLAN.md §10.44 Phase 1, this reads the real, live

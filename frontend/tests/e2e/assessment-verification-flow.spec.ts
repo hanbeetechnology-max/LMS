@@ -23,7 +23,7 @@ async function loginAsStudent(page: Page) {
   await page.getByLabel("Email").fill("ava@student.edu");
   await page.getByLabel("Password").fill("student123");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/student\/dashboard$/);
+  await expect(page).toHaveURL(/\/student\/rc$/);
 }
 
 async function loginAsStaff(page: Page) {
@@ -31,7 +31,9 @@ async function loginAsStaff(page: Page) {
   await page.getByLabel("Email").fill("jamie@hanbeelms.edu");
   await page.getByLabel("Password").fill("staff123");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/staff\/dashboard$/);
+  await expect(page).toHaveURL(/\/staff\/my-space$/);
+  // Quiz submissions waiting for review live on the LMS overview.
+  await page.goto("/staff/lms");
 }
 
 /**

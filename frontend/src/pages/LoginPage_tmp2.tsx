@@ -1,6 +1,0 @@
-﻿          </Link>
-        </div>
-      </AuthLayout>
-    </>
-  );
-}
