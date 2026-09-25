@@ -23,6 +23,9 @@ export function InvitationsCard({
   const { showToast } = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [showRevoked, setShowRevoked] = useState(false);
+  const revokedCount = invitations.filter((i) => i.state === "revoked").length;
+  const visible = showRevoked ? invitations : invitations.filter((i) => i.state !== "revoked");
 
   async function revoke(inv: SchoolInvitation) {
     setBusyId(inv.id);
@@ -45,8 +48,16 @@ export function InvitationsCard({
       ) : error ? (
         <ErrorBlock onRetry={reload} />
       ) : (
+        <>
+        {revokedCount > 0 && (
+          <div className="mb-3 flex justify-end">
+            <button type="button" onClick={() => setShowRevoked((v) => !v)} aria-pressed={showRevoked} className={small}>
+              {showRevoked ? "Hide revoked" : `Show revoked (${revokedCount})`}
+            </button>
+          </div>
+        )}
         <DataTable
-          rows={invitations}
+          rows={visible}
           rowKey={(r) => r.id}
           emptyTitle="No invitations yet"
           emptyBody="Invite students above and they will be listed here."
@@ -88,6 +99,7 @@ export function InvitationsCard({
             },
           ]}
         />
+        </>
       )}
     </Card>
   );

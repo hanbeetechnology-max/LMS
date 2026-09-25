@@ -61,7 +61,7 @@ test.describe("school staff portal", () => {
       const row = page.getByRole("row").filter({ hasText: email }).last();
       await row.getByRole("button", { name: /^Revoke invitation/ }).click();
       await row.getByRole("button", { name: "Confirm revoke" }).click();
-      await expect(page.getByRole("row").filter({ hasText: email }).last()).toContainText("revoked");
+      await expect(page.getByText(`Invitation for ${email} revoked`)).toBeVisible();
     }
   });
 
