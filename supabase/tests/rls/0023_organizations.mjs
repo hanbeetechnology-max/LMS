@@ -7,6 +7,7 @@ const asUser = async (u) => { await c.query("reset role"); await c.query("set lo
 const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
 const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
 const one = async (sql,p) => (await c.query(sql,p)).rows[0];
+const baseOrg = (await c.query("select count(*)::int n from organizations")).rows[0].n;
 
 check("enum value school_staff exists", (await one("select count(*)::int n from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='user_role' and e.enumlabel='school_staff'")).n===1);
 
@@ -66,7 +67,7 @@ await asOwner();
 w = await tryq("insert into organization_members (org_id,user_id,member_role) values ($1,$2,'student')",[orgB,ava]); check("one active school per student is enforced", !!w.e, w.e?.message?.slice(0,60));
 await c.query("rollback");
 await asOwner();
-check("all test rows rolled back", (await one("select count(*)::int n from organizations")).n===0);
+check("all test rows rolled back", (await one("select count(*)::int n from organizations")).n===baseOrg);
 check("info@hanbee.in role restored", (await one("select role from profiles where id=$1",[info])).role==="staff");
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

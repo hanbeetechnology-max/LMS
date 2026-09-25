@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import { test, expect, type Page } from "@playwright/test";
 
 const SHOTS = process.env.TASK_SHOTS;
@@ -11,6 +12,30 @@ async function login(page: Page, email: string, password: string) {
 }
 
 const title = `TEST portal-tasks ${Date.now()}`;
+
+// Creates a real task for Jamie through the public API (as Jamie), so the
+// manager test never depends on leftovers. Returns a cleanup function.
+async function seedJamieTask(taskTitle: string): Promise<() => Promise<void>> {
+  const env = readFileSync("tests/../.env.local", "utf8");
+  const url = env.match(/VITE_SUPABASE_URL=(.+)/)![1].trim();
+  const anon = env.match(/VITE_SUPABASE_ANON_KEY=(.+)/)![1].trim();
+  const grant = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: anon, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "jamie@hanbeelms.edu", password: "staff123" }),
+  }).then((r) => r.json());
+  const headers = { apikey: anon, Authorization: `Bearer ${grant.access_token}`, "Content-Type": "application/json", Prefer: "return=representation" };
+  const created = await fetch(`${url}/rest/v1/staff_tasks`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ staff_id: grant.user.id, title: taskTitle, priority: "high" }),
+  }).then((r) => r.json());
+  const id = created[0].id as string;
+  return async () => {
+    await fetch(`${url}/rest/v1/staff_tasks?id=eq.${id}`, { method: "DELETE", headers });
+  };
+}
+
 
 async function noSideScroll(page: Page) {
   const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -64,6 +89,8 @@ test.describe("Tasks page", () => {
   });
 
   test("manager: all employees tab is read only", async ({ page }) => {
+    const cleanup = await seedJamieTask(`TEST portal-tasks manager view ${Date.now()}`);
+    try {
     await login(page, "morgan@hanbeelms.edu", "manager123");
     await page.goto("/manager/tasks");
     await page.getByRole("tab", { name: "All employees' tasks" }).click();
@@ -73,6 +100,9 @@ test.describe("Tasks page", () => {
     await expect(page.getByRole("button", { name: /^(Edit|Delete|Move)/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "New task" })).toHaveCount(0);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/manager-1280.png` });
+    } finally {
+      await cleanup();
+    }
   });
 
   test("school owner can open /school/tasks", async ({ page }) => {

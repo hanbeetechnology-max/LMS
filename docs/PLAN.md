@@ -1185,3 +1185,15 @@ Full status: `docs/MULTI_SCHOOL_PLATFORM.md` section 10. Shared spec and handove
 - Found and fixed while testing: a browser test revoked an invitation but ended before the request finished (it now waits for the confirmation), and one test run left a pending invitation which was revoked by hand.
 - Verified: a full page reload and a direct deep link keep the person signed in for all four roles (`tests/e2e/portal/session.spec.ts`), which settled a builder's report that sessions were lost.
 - Browser suite: 59 passed, 1 skipped (clock-in test, skipped when the day is already closed), 0 failed.
+
+
+### 2026-09-25 - Student redesign, tasks, schedule, staff attendance (migrations 0033, 0034)
+
+Status and page tables: `docs/MULTI_SCHOOL_PLATFORM.md`.
+
+- Student dashboard redesigned in a simple template style; real student attendance page (own record only, never shown to staff or manager); the solo option now appears only when a student's school closes.
+- Migration 0033: task priority and status; working hours settings; server-computed lateness; `staff_attendance()`. Migration 0034: a holiday or day-off clock-in counts as present (found because Jamie's clock-in on a real holiday showed as late).
+- Tasks (List and Board), Schedule (Week, Day, Month with holidays), Hanbee staff Attendance page, manager performance view with a Working hours card.
+- Test fixes: exact selectors after the redesign made headings and chat text appear twice; the manager tasks test now seeds and removes its own task instead of relying on leftovers; old schedule and task tests replaced by the new specs.
+- The older database suites assumed an empty database; they now compare against baselines so the demo data does not break them. No rule problem was found.
+- Verified: database suites 471 checks, 0 failed; browser suite 77 passed, 1 skipped, 0 failed.
