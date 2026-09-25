@@ -32,8 +32,8 @@ async function loginAsStaff(page: Page) {
   await page.getByLabel("Password").fill("staff123");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/staff\/my-space$/);
-  // Quiz submissions waiting for review live on the LMS overview.
-  await page.goto("/staff/lms");
+  // Quiz submissions waiting for review live on the Reviews page.
+  await page.goto("/staff/reviews");
 }
 
 /**
@@ -96,13 +96,14 @@ test("student submits a knowledge check and lands in pending verification, even 
   await expect(markComplete).toBeDisabled();
 });
 
-test("staff verifies the pending submission in AssessmentReviewPanel, which unlocks the student's next lesson", async ({ page, browser }) => {
+test("staff verifies the pending submission on the Reviews page, which unlocks the student's next lesson", async ({ page, browser }) => {
   const staffPage = await (await browser.newContext()).newPage();
   await loginAsStaff(staffPage);
-  const reviewSection = staffPage.locator("section").filter({ hasText: "Assessment review" });
-  await expect(reviewSection.getByText("Color Theory check")).toBeVisible();
-  await reviewSection.getByRole("button", { name: "Verify" }).click();
-  await expect(reviewSection.getByText("Color Theory check")).toHaveCount(0);
+  const row = staffPage.getByRole("row").filter({ hasText: "ava@student.edu" }).filter({ hasText: "Color Theory" });
+  await expect(row).toHaveCount(1);
+  await row.getByRole("button", { name: /Verify/ }).click();
+  await staffPage.getByRole("dialog").getByRole("button", { name: "Verify", exact: true }).click();
+  await expect(staffPage.getByRole("row").filter({ hasText: "ava@student.edu" }).filter({ hasText: "Color Theory" })).toHaveCount(0);
   await staffPage.close();
 
   await loginAsStudent(page);

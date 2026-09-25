@@ -11,7 +11,10 @@ const RcLeaderboardPage = page(() => import("./RcLeaderboardPage"), "RcLeaderboa
 const RcTeamPage = page(() => import("./RcTeamPage"), "RcTeamPage");
 const LmsOverviewPage = page(() => import("./LmsOverviewPage"), "LmsOverviewPage");
 const LmsCoursesPage = page(() => import("./LmsCoursesPage"), "LmsCoursesPage");
-const AnnouncementsPage = page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
+const LmsReviewsPage = page(() => import("./LmsReviewsPage"), "LmsReviewsPage");
+const LmsCertificatesPage = page(() => import("./LmsCertificatesPage"), "LmsCertificatesPage");
+const LmsCertificateViewPage = page(() => import("./LmsCertificateViewPage"), "LmsCertificateViewPage");
+const AnnouncementsPage =page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
 const SettingsPage = page(() => import("../shared/SettingsPage"), "SettingsPage");
 const ChatPage = page(() => import("../chat/ChatPage"), "ChatPage");
 // Existing, still-used learning screens.
@@ -36,6 +39,9 @@ export const studentRoutes: RouteObject = {
     { path: "rc/team", element: <RcTeamPage /> },
     { path: "lms", element: <LmsOverviewPage /> },
     { path: "lms/courses", element: <LmsCoursesPage /> },
+    { path: "lms/reviews", element: <LmsReviewsPage /> },
+    { path: "lms/certificates", element: <LmsCertificatesPage /> },
+    { path: "lms/certificates/:certificateId", element: <LmsCertificateViewPage /> },
     { path: "lms/attendance", element: <AttendancePage /> },
     { path: "lms/ai", element: <StudentAiPage /> },
     { path: "courses/:id/lessons/:lessonId", element: <StudentLessonViewerPage /> },

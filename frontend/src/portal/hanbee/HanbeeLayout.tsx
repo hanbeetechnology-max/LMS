@@ -18,6 +18,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Attendance", to: "/staff/attendance", Icon: AttendanceIcon },
   { label: "Tournament", to: "/staff/tournament", Icon: TrophyIcon },
   { label: "LMS", to: "/staff/lms", Icon: CoursesIcon },
+  { label: "Reviews", to: "/staff/reviews", Icon: EnrollmentIcon },
+  { label: "Certificates", to: "/staff/certificates", Icon: CoursesIcon },
   { label: "Schools", to: "/staff/schools", Icon: EnrollmentIcon },
   { label: "Courses", to: "/staff/courses", Icon: CoursesIcon },
   { label: "Applications", to: "/staff/applications", Icon: AttendanceIcon },

@@ -46,7 +46,9 @@ export function LmsOverviewPage() {
             <StatCard label="Courses" value={courses.length} />
             <StatCard label="Lessons done" value={lessonsDone} />
             <StatCard label="Average progress" value={`${avg}%`} />
-            <StatCard label="Certificates" value={certificates} />
+            <Link to="/student/lms/certificates" aria-label="Certificates, open the certificates page" className="block rounded-xl hover:opacity-90">
+              <StatCard label="Certificates" value={certificates} />
+            </Link>
           </div>
 
           {next && (

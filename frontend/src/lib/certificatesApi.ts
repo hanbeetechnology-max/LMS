@@ -87,3 +87,40 @@ export async function fetchAllCertificatesForStaff(): Promise<StaffCertificate[]
     userEmail: r.profiles?.email ?? "",
   }));
 }
+
+export interface CertificateOverviewRow {
+  certificateId: string;
+  serial: string;
+  courseTitle: string;
+  issuedAt: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  schoolName: string | null;
+}
+
+/** Every certificate the caller may see (manager and Hanbee staff: all, school staff: own school). */
+export async function fetchCertificatesOverview(): Promise<CertificateOverviewRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("list_certificates_overview");
+  if (error) throw error;
+  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+    certificateId: r.certificate_id as string,
+    serial: r.serial as string,
+    courseTitle: (r.course_title as string) ?? "",
+    issuedAt: r.issued_at as string,
+    studentId: r.student_id as string,
+    studentName: (r.student_name as string) ?? "",
+    studentEmail: (r.student_email as string) ?? "",
+    schoolName: (r.school_name as string | null) ?? null,
+  }));
+}
+
+/** Accepts a bare certificate id or a full /verify/<id> link. */
+export function extractCertificateId(input: string): string {
+  const text = input.trim();
+  const m = text.match(/\/verify\/([^/?#\s]+)/);
+  return (m ? m[1] : text.split(/[?#\s]/)[0]).trim();
+}
+
+export const verifyUrlFor = (certificateId: string) => `${window.location.origin}/verify/${certificateId}`;
