@@ -15,6 +15,7 @@ void [AttendanceIcon, CoursesIcon, EnrollmentIcon, TrophyIcon];
 
 const NAV_ITEMS: NavItem[] = [
   { label: "My space", to: "/staff/my-space", Icon: DashboardIcon },
+  { label: "Attendance", to: "/staff/attendance", Icon: AttendanceIcon },
   { label: "Tournament", to: "/staff/tournament", Icon: TrophyIcon },
   { label: "LMS", to: "/staff/lms", Icon: CoursesIcon },
   { label: "Schools", to: "/staff/schools", Icon: EnrollmentIcon },
