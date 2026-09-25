@@ -76,7 +76,7 @@ Existing data: tournament "Hanbee RC Cup 2026" (about three weeks out), team Alp
 
 ## Testing protocol (every agent)
 
-1. `cd frontend && npx tsc --noEmit` must be clean.
+1. `cd frontend && npx tsc -b --noEmit` must be clean. (Plain `npx tsc --noEmit` checks nothing in this project: the root tsconfig only references the real configs.)
 2. Run the app on your assigned port (`npm run dev -- --port <port> --strictPort`) and use each screen in a real browser with the `playwright-skill` (screenshots at 1280px and 390px, read them). Check the empty, error and loading states, not only the happy path.
 3. Save a Playwright spec for your area at `frontend/tests/e2e/portal/<area>.spec.ts` covering the golden path plus one refusal (for example a school owner cannot see another school). Use the demo accounts. Run with `--workers=1` and the port you were given (`BASE_URL` or the config's `baseURL`; check `playwright.config.ts`).
 4. The database security suites already prove the rules; do not re-prove them, but if a screen shows data it should not, that is a bug to report.

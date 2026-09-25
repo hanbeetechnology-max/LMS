@@ -11,7 +11,7 @@ const one = async (sql,p) => (await c.query(sql,p)).rows[0];
 const baseOrg = (await c.query("select count(*)::int n from organizations")).rows[0].n;
 const cnt = async (sql,p) => (await one(`select count(*)::int n from (${sql}) q`,p)).n;
 const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
-  const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
+  const r = await tryq("select test_support_signup($1,$2,$3::jsonb)",[uid,email,JSON.stringify(meta)]);
   if (r.e) throw new Error("signup failed "+email+": "+r.e.message); return uid; };
 const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, school_name:name, registration_no:"REG-"+name, official_email:"office@x.test", guardian_consent:"true"});
 

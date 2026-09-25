@@ -114,14 +114,14 @@ test("direct chat ticks turn blue after the other person opens it", async () => 
   await expect(composer).toBeVisible({ timeout: 15000 });
   await composer.fill(body);
   await composer.press("Enter");
-  await expect(p.getByText(body, { exact: true })).toBeVisible();
+  await expect(p.getByRole("region", { name: "Conversation" }).getByText(body, { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "Delivered" }).last()).toBeVisible({ timeout: 15000 });
 
   // Student sees the unread chat live, opens it, and the owner's ticks turn blue.
   const srow = row(student.page, ownerName);
   await expect(srow.getByLabel(/\d+ unread/)).toBeVisible({ timeout: 20000 });
   await srow.click();
-  await expect(student.page.getByText(body, { exact: true })).toBeVisible();
+  await expect(student.page.getByRole("region", { name: "Conversation" }).getByText(body, { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "Read" }).last()).toBeVisible({ timeout: 20000 });
 });
 

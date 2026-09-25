@@ -36,3 +36,7 @@ Thumbs.db
 # Supabase Edge Function secrets and CLI link state
 supabase/functions/.env
 supabase/.temp/
+
+# Restricted test-database login (local only)
+supabase/tests/.env.test
+supabase/tests/backups/

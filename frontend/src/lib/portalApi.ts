@@ -337,6 +337,13 @@ export async function fetchSchoolJoinLink(orgId: string): Promise<string | null>
   return `${window.location.origin}/join/${data.join_token}`;
 }
 
+/** Replaces the school's shared join link. The old link stops working at once.
+ *  School owner, Hanbee staff and the manager may do this. Returns the new link. */
+export async function rotateSchoolJoinLink(orgId: string): Promise<string | null> {
+  const token = await rpc<string>("rotate_school_join_link", { p_org: orgId });
+  return token ? `${window.location.origin}/join/${token}` : null;
+}
+
 /* ------------------------------------------------------------ verification */
 
 export async function verifySchool(orgId: string): Promise<VerifyOutcome | null> {

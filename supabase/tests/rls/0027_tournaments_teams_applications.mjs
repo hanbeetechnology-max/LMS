@@ -9,7 +9,7 @@ const asOwner = async () => { await c.query("reset role"); await c.query("select
 const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
 const one = async (sql,p) => (await c.query(sql,p)).rows[0];
 const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
-  const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
+  const r = await tryq("select test_support_signup($1,$2,$3::jsonb)",[uid,email,JSON.stringify(meta)]);
   return { ...r, uid }; };
 const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, school_name:name, registration_no:"REG-"+name, official_email:"office@"+name.toLowerCase().replace(/\W/g,"")+".test", guardian_consent:"true"});
 const ok = (r)=>!r.e;

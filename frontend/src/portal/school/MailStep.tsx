@@ -40,7 +40,7 @@ export function MailStep({ orgId, schoolName, emails }: { orgId: string; schoolN
 
   return (
     <Card>
-      <Eyebrow>Step 2 of 3 · Send invitations</Eyebrow>
+      <Eyebrow>Step 2 of 3 Â· Send invitations</Eyebrow>
       <h3 className="mt-1 text-lg font-semibold text-(--color-ink)">Send the invitations from your own email</h3>
       <p className="mt-1 text-sm text-(--color-slate)">
         The students are added as BCC, so they cannot see each other. You only add your own address in To or Cc.
