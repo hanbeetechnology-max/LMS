@@ -18,6 +18,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Verifications", to: "/manager/verifications", Icon: EnrollmentIcon },
   { label: "Schools", to: "/manager/schools", Icon: TrophyIcon },
   { label: "Hanbee staff", to: "/manager/staff", Icon: AttendanceIcon },
+  { label: "Reviews", to: "/manager/reviews", Icon: EnrollmentIcon },
+  { label: "Certificates", to: "/manager/certificates", Icon: CoursesIcon },
   { label: "Announcements", to: "/manager/announcements", Icon: AnnouncementIcon },
   { label: "Schedule", to: "/manager/schedule", Icon: SchedulingIcon },
   { label: "Tasks", to: "/manager/tasks", Icon: SchedulingIcon },
