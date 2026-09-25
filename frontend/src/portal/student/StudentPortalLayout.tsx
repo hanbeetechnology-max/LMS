@@ -34,6 +34,8 @@ const RC_NAV: NavItem[] = [
 const LMS_NAV: NavItem[] = [
   { label: "Overview", to: "/student/lms", Icon: DashboardIcon, end: true },
   { label: "My courses", to: "/student/lms/courses", Icon: CoursesIcon },
+  { label: "Reviews", to: "/student/lms/reviews", Icon: EnrollmentIcon },
+  { label: "Certificates", to: "/student/lms/certificates", Icon: TrophyIcon },
   { label: "Attendance", to: "/student/lms/attendance", Icon: AttendanceIcon },
   { label: "AI Assistant", to: "/student/lms/ai", Icon: AiIcon },
   { label: "Announcements", to: "/student/announcements", Icon: AnnouncementIcon },

@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
-import { AssessmentReviewPanel } from "../../components/app/AssessmentReviewPanel";
+import { fetchAssessmentReviews } from "../../lib/assessmentApi";
 import { fetchCourseStats, fetchSiteLmsOverview, type CourseStats } from "../../lib/portalApi";
-import { DataTable, ErrorBlock, LoadingBlock, PageHeader, StatCard, StatusBadge, useAsync, type Column } from "../kit";
+import { Card, DataTable, ErrorBlock, Eyebrow, LoadingBlock, PageHeader, StatCard, StatusBadge, useAsync, type Column } from "../kit";
 import { countOf, ProgressBar } from "./ui";
 
 export function HanbeeLmsOverviewPage() {
   const overview = useAsync(fetchSiteLmsOverview, []);
   const courses = useAsync<CourseStats[]>(fetchCourseStats, []);
+  const reviews = useAsync(fetchAssessmentReviews, []);
+  const waiting = (reviews.data ?? []).filter((r) => r.status === "pending").length;
   const o = overview.data;
 
   const columns: Column<CourseStats>[] = [
@@ -49,9 +51,17 @@ export function HanbeeLmsOverviewPage() {
         </div>
       ) : null}
 
-      <div className="mb-8 -mt-8">
-        <AssessmentReviewPanel />
-      </div>
+      <Card className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <Eyebrow>Lesson reviews</Eyebrow>
+          <p className="mt-1 text-base font-semibold text-(--color-ink)">
+            {reviews.loading && !reviews.data ? "Checking..." : reviews.error ? "Could not load reviews" : `${waiting} lesson review${waiting === 1 ? "" : "s"} waiting`}
+          </p>
+        </div>
+        <Link to="/staff/reviews" className="inline-flex min-h-11 items-center rounded-full bg-(--color-ink) px-5 text-sm font-semibold text-(--color-paper) hover:opacity-90">
+          Open reviews
+        </Link>
+      </Card>
 
       <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Courses</h2>
       {courses.loading && !courses.data ? (

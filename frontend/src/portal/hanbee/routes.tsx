@@ -10,7 +10,9 @@ const MySpacePage = page(() => import("./MySpacePage"), "MySpacePage");
 const AttendancePage = page(() => import("./AttendancePage"), "AttendancePage");
 const TournamentManagePage = page(() => import("./TournamentManagePage"), "TournamentManagePage");
 const HanbeeLmsOverviewPage = page(() => import("./HanbeeLmsOverviewPage"), "HanbeeLmsOverviewPage");
-const SchoolsPage = page(() => import("./SchoolsPage"), "SchoolsPage");
+const StaffReviewsPage = page(() => import("../shared/learning/pages"), "StaffReviewsPage");
+const StaffCertificatesPage = page(() => import("../shared/learning/pages"), "StaffCertificatesPage");
+const SchoolsPage =page(() => import("./SchoolsPage"), "SchoolsPage");
 const SchoolDetailPage = page(() => import("./SchoolDetailPage"), "SchoolDetailPage");
 const CoursesPage = page(() => import("./CoursesPage"), "CoursesPage");
 const ApplicationsPage = page(() => import("./ApplicationsPage"), "ApplicationsPage");
@@ -37,6 +39,8 @@ export const hanbeeRoutes: RouteObject = {
     { path: "attendance", element: <AttendancePage /> },
     { path: "tournament", element: <TournamentManagePage /> },
     { path: "lms", element: <HanbeeLmsOverviewPage /> },
+    { path: "reviews", element: <StaffReviewsPage /> },
+    { path: "certificates", element: <StaffCertificatesPage /> },
     { path: "schools", element: <SchoolsPage /> },
     { path: "schools/:orgId", element: <SchoolDetailPage /> },
     { path: "courses", element: <CoursesPage /> },

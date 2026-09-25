@@ -225,3 +225,92 @@ export async function saveAssessmentDraft(
     if (optionError) throw optionError;
   }
 }
+
+/* ---------------------------------------------------------------- reviews */
+
+export interface AssessmentReview {
+  submissionId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  schoolName: string | null;
+  courseId: string | null;
+  courseTitle: string;
+  lessonTitle: string;
+  assessmentTitle: string;
+  score: number;
+  passed: boolean;
+  status: "pending" | "verified" | "failed";
+  unlocked: boolean;
+  submittedAt: string;
+  autoUnlockAt: string;
+  verifiedAt: string | null;
+}
+
+/** All lesson reviews the caller may see (manager and Hanbee staff: everything, school staff: own school). */
+export async function fetchAssessmentReviews(): Promise<AssessmentReview[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("list_assessment_reviews");
+  if (error) throw error;
+  return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+    submissionId: r.submission_id as string,
+    studentId: r.student_id as string,
+    studentName: (r.student_name as string) ?? "",
+    studentEmail: (r.student_email as string) ?? "",
+    schoolName: (r.school_name as string | null) ?? null,
+    courseId: (r.course_id as string | null) ?? null,
+    courseTitle: (r.course_title as string) ?? "",
+    lessonTitle: (r.lesson_title as string) ?? "",
+    assessmentTitle: (r.assessment_title as string) ?? "",
+    score: Number(r.score ?? 0),
+    passed: !!r.passed,
+    status: r.status as AssessmentReview["status"],
+    unlocked: !!r.unlocked,
+    submittedAt: r.submitted_at as string,
+    autoUnlockAt: r.auto_unlock_at as string,
+    verifiedAt: (r.verified_at as string | null) ?? null,
+  }));
+}
+
+export interface MyAssessmentSubmission {
+  id: string;
+  score: number;
+  passed: boolean;
+  status: "pending" | "verified" | "failed";
+  submittedAt: string;
+  autoUnlockAt: string;
+  verifiedAt: string | null;
+  assessmentTitle: string;
+  lessonId: string | null;
+  lessonTitle: string;
+  courseId: string | null;
+  courseTitle: string;
+}
+
+/** The signed-in student's own submissions (RLS limits the rows). */
+export async function fetchMyAssessmentSubmissions(): Promise<MyAssessmentSubmission[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("assessment_submissions")
+    .select("id, score, passed, status, submitted_at, auto_unlock_at, verified_at, assessments(title, lesson_id, lessons(title, modules(course_id, courses(title))))")
+    .order("submitted_at", { ascending: false });
+  if (error) throw error;
+  type Embed = { title?: string; lesson_id?: string; lessons?: { title?: string; modules?: { course_id?: string; courses?: { title?: string } | null } | null } | null } | null;
+  return ((data ?? []) as unknown as Array<Record<string, unknown>>).map((r) => {
+    const a = r.assessments as Embed;
+    return {
+      id: r.id as string,
+      score: Number(r.score ?? 0),
+      passed: !!r.passed,
+      status: r.status as MyAssessmentSubmission["status"],
+      submittedAt: r.submitted_at as string,
+      autoUnlockAt: r.auto_unlock_at as string,
+      verifiedAt: (r.verified_at as string | null) ?? null,
+      assessmentTitle: a?.title ?? "Lesson review",
+      lessonId: a?.lesson_id ?? null,
+      lessonTitle: a?.lessons?.title ?? "",
+      courseId: a?.lessons?.modules?.course_id ?? null,
+      courseTitle: a?.lessons?.modules?.courses?.title ?? "",
+    };
+  });
+}

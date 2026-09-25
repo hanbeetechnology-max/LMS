@@ -11,7 +11,9 @@ const VerificationsPage = page(() => import("./VerificationsPage"), "Verificatio
 const ManagerSchoolsPage = page(() => import("./ManagerSchoolsPage"), "ManagerSchoolsPage");
 const StaffOverviewPage = page(() => import("./StaffOverviewPage"), "StaffOverviewPage");
 // The school detail screen is built once, in the Hanbee staff portal, and reused here.
-const SchoolDetailPage = page(() => import("../hanbee/SchoolDetailPage"), "SchoolDetailPage");
+const ManagerReviewsPage = page(() => import("../shared/learning/pages"), "ManagerReviewsPage");
+const ManagerCertificatesPage = page(() => import("../shared/learning/pages"), "ManagerCertificatesPage");
+const SchoolDetailPage =page(() => import("../hanbee/SchoolDetailPage"), "SchoolDetailPage");
 const AnnouncementsPage = page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
 const SchedulePage = page(() => import("../shared/SchedulePage"), "SchedulePage");
 const TasksPage = page(() => import("../shared/TasksPage"), "TasksPage");
@@ -33,6 +35,8 @@ export const managerRoutes: RouteObject = {
     { path: "schools", element: <ManagerSchoolsPage /> },
     { path: "schools/:orgId", element: <SchoolDetailPage /> },
     { path: "staff", element: <StaffOverviewPage /> },
+    { path: "reviews", element: <ManagerReviewsPage /> },
+    { path: "certificates", element: <ManagerCertificatesPage /> },
     { path: "announcements", element: <AnnouncementsPage /> },
     { path: "schedule", element: <SchedulePage /> },
     { path: "tasks", element: <TasksPage /> },
