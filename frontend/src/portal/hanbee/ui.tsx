@@ -4,15 +4,15 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 export const btn = {
   primary:
-    "inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-ink) px-5 text-sm font-semibold text-(--color-paper) transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)",
+    "inline-flex min-h-11 items-center justify-center rounded-full bg-(--color-accent) px-5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)",
   secondary:
-    "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-paper) px-5 text-sm font-semibold text-(--color-ink) transition-colors hover:bg-(--color-cloud) disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)",
+    "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-paper) px-5 text-sm font-semibold text-(--color-ink) transition-colors hover:bg-(--color-cloud) disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)",
   danger:
     "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-error)/40 bg-(--color-error-soft) px-5 text-sm font-semibold text-(--color-error) transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-error)",
 };
 
 export const inputClass =
-  "min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) placeholder:text-(--color-mist) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--color-violet)";
+  "min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) placeholder:text-(--color-mist) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--color-accent)";
 
 export function Field({ label, children }: { label: string; children: (id: string) => ReactNode }) {
   const id = useId();
@@ -107,7 +107,7 @@ export function ProgressBar({ pct, label }: { pct: number; label?: string }) {
   return (
     <div className="flex items-center gap-2" title={label}>
       <div className="h-2 w-24 shrink-0 overflow-hidden rounded-full bg-(--color-cloud)" role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={label ?? "Progress"}>
-        <div className="h-full rounded-full bg-(--color-teal-deep)" style={{ width: `${v}%` }} />
+        <div className="h-full rounded-full bg-(--color-accent)" style={{ width: `${v}%` }} />
       </div>
       <span className="text-xs tabular-nums text-(--color-slate)">{v}%</span>
     </div>
