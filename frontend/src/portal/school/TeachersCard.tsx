@@ -13,7 +13,7 @@ export function TeachersCard({ orgId, schoolName, invitations, reload }: { orgId
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const teacherInvites = invitations.filter((i) => i.role === "school_staff");
+  const teacherInvites = invitations.filter((i) => i.role === "school_staff" && i.state !== "revoked");
 
   function personalLink(token: string) {
     return `${window.location.origin}/accept-invite?token=${token}`;
