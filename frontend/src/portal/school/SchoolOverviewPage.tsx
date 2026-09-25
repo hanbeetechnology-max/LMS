@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useAuth } from "../../lib/AuthProvider";
 import { fetchSchoolCourseParticipation, fetchSchoolOverview } from "../../lib/portalApi";
 import { fetchSchoolTeams } from "../../lib/tournamentPortalApi";
-import { Card, DataTable, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, SlidePanel, SlideSwitcher, StatCard, StatusBadge, useAsync } from "../kit";
+import { Link } from "react-router-dom";
+import { Card, Eyebrow, DataTable, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, SlidePanel, SlideSwitcher, StatCard, StatusBadge, useAsync } from "../kit";
 
 const TABS = [
   { id: "tournament", label: "Tournament" },
@@ -17,6 +18,11 @@ const STATUS_WORDS: Record<string, string> = {
   rejected: "Rejected",
   withdrawn: "Withdrawn",
 };
+
+function daysLeft(iso: string): string {
+  const d = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+  return d <= 0 ? "Today" : d === 1 ? "1 day" : `${d} days`;
+}
 
 export function SchoolOverviewPage() {
   const { profile } = useAuth();
@@ -46,13 +52,6 @@ export function SchoolOverviewPage() {
         actions={<StatusBadge status={o.school.status} />}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="People">
-        <StatCard label="Owners" value={o.people.owners} />
-        <StatCard label="Teachers" value={o.people.staff} />
-        <StatCard label="Students" value={o.people.students} />
-        <StatCard label="Pending invites" value={o.people.pendingInvites} tone={o.people.pendingInvites > 0 ? "warn" : "neutral"} />
-      </div>
-
       <div className="mb-5">
         <SlideSwitcher tabs={TABS} value={tab} onChange={setTab} label="School overview" />
       </div>
@@ -60,14 +59,15 @@ export function SchoolOverviewPage() {
       <SlidePanel panelKey={tab} index={index}>
         {tab === "tournament" ? (
           <div className="space-y-5">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard label="Teams" value={t.teamsTotal} />
               <StatCard label="Students taking part" value={t.participants} />
               <StatCard label="Best rank" value={t.bestRank ?? "-"} hint={t.bestRank ? undefined : "No result yet"} />
+              <StatCard label="Next tournament" value={next ? daysLeft(next.startsAt) : "-"} hint={next ? next.title : "None scheduled"} />
             </div>
 
             <Card>
-              <h2 className="font-display text-lg font-semibold text-(--color-ink)">Next tournament</h2>
+              <Eyebrow>Next tournament</Eyebrow>
               {next ? (
                 <div className="mt-2 text-sm text-(--color-ink-soft)">
                   <p className="text-base font-semibold text-(--color-ink)">{next.title}</p>
@@ -79,9 +79,9 @@ export function SchoolOverviewPage() {
             </Card>
 
             <Card>
-              <h2 className="font-display text-lg font-semibold text-(--color-ink)">Teams by status</h2>
+              <Eyebrow>Teams by status</Eyebrow>
               {statusEntries.length === 0 ? (
-                <p className="mt-2 text-sm text-(--color-slate)">No teams yet.</p>
+                <p className="mt-2 text-sm text-(--color-slate)">No teams yet. <Link to="/school/teams" className="font-semibold text-(--color-accent) underline">Create a team</Link></p>
               ) : (
                 <ul className="mt-3 flex flex-wrap gap-3">
                   {statusEntries.map(([status, count]) => (
@@ -94,7 +94,7 @@ export function SchoolOverviewPage() {
             </Card>
 
             <div>
-              <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Your teams</h2>
+              <h2 className="mb-3 text-base font-semibold text-(--color-ink)">Your teams</h2>
               {teams.loading ? (
                 <LoadingBlock />
               ) : teams.error ? (
@@ -104,7 +104,7 @@ export function SchoolOverviewPage() {
                   rows={teams.data ?? []}
                   rowKey={(r) => r.id}
                   emptyTitle="No teams yet"
-                  emptyBody="Create a team on the Teams page to enter a tournament."
+                  emptyBody="Open the Teams page and create a team to enter a tournament."
                   columns={[
                     { key: "name", header: "Team", sortValue: (r) => r.name, render: (r) => <span className="font-medium text-(--color-ink)">{r.name}</span> },
                     { key: "tournament", header: "Tournament", sortValue: (r) => r.tournamentTitle, render: (r) => r.tournamentTitle },
@@ -117,13 +117,14 @@ export function SchoolOverviewPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard label="Students enrolled" value={o.lms.studentsEnrolled} />
               <StatCard label="Lessons completed" value={o.lms.lessonsCompleted} />
               <StatCard label="Average completion" value={`${Math.round(o.lms.avgCompletionPct)}%`} />
+              <StatCard label="Students in school" value={o.people.students} />
             </div>
             <div>
-              <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Courses</h2>
+              <h2 className="mb-3 text-base font-semibold text-(--color-ink)">Courses</h2>
               {courses.loading ? (
                 <LoadingBlock />
               ) : courses.error ? (
@@ -133,7 +134,7 @@ export function SchoolOverviewPage() {
                   rows={courses.data ?? []}
                   rowKey={(r) => r.courseId}
                   emptyTitle="No course activity yet"
-                  emptyBody="When your students enrol in courses they will show up here."
+                  emptyBody="When your students enrol in courses they will show up here. Invite your first students on the Students page."
                   columns={[
                     { key: "title", header: "Course", sortValue: (r) => r.title, render: (r) => <span className="font-medium text-(--color-ink)">{r.title}</span> },
                     { key: "students", header: "Students", sortValue: (r) => r.students, render: (r) => r.students },
@@ -145,6 +146,14 @@ export function SchoolOverviewPage() {
           </div>
         )}
       </SlidePanel>
+
+      <Card className="mt-5">
+        <Eyebrow>People</Eyebrow>
+        <p className="mt-2 text-sm text-(--color-ink-soft)" aria-label="People">
+          {o.people.owners} owner{o.people.owners === 1 ? "" : "s"}, {o.people.staff} teacher{o.people.staff === 1 ? "" : "s"}, {o.people.students} student{o.people.students === 1 ? "" : "s"}, {o.people.pendingInvites} pending invite{o.people.pendingInvites === 1 ? "" : "s"}.{" "}
+          <Link to="/school/students" className="font-semibold text-(--color-accent) underline">{o.people.students === 0 ? "Invite your first students" : "Manage students"}</Link>
+        </p>
+      </Card>
     </>
   );
 }

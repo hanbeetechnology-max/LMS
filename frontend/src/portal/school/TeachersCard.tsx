@@ -57,7 +57,7 @@ export function TeachersCard({ orgId, schoolName, invitations, reload }: { orgId
 
   return (
     <Card>
-      <h2 className="font-display text-lg font-semibold text-(--color-ink)">Teachers</h2>
+      <h2 className="text-lg font-semibold text-(--color-ink)">Teachers</h2>
       <p className="mt-1 text-sm text-(--color-slate)">Invite a co-teacher to help run your school. Only the school owner can do this.</p>
       <form onSubmit={submit} className="mt-4 flex flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1 basis-64">
@@ -68,10 +68,10 @@ export function TeachersCard({ orgId, schoolName, invitations, reload }: { orgId
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="teacher@example.com"
-            className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-violet)"
+            className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-accent)"
           />
         </div>
-        <button type="submit" disabled={busy || !email.trim()} className="inline-flex min-h-11 items-center rounded-full bg-(--color-ink) px-6 text-sm font-semibold text-(--color-paper) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)">
+        <button type="submit" disabled={busy || !email.trim()} className="inline-flex min-h-11 items-center rounded-full bg-(--color-accent) px-6 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)">
           {busy ? "Inviting..." : "Invite teacher"}
         </button>
       </form>
