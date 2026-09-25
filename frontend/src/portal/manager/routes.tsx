@@ -13,6 +13,7 @@ const StaffOverviewPage = page(() => import("./StaffOverviewPage"), "StaffOvervi
 // The school detail screen is built once, in the Hanbee staff portal, and reused here.
 const SchoolDetailPage = page(() => import("../hanbee/SchoolDetailPage"), "SchoolDetailPage");
 const AnnouncementsPage = page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
+const SchedulePage = page(() => import("../shared/SchedulePage"), "SchedulePage");
 const TasksPage = page(() => import("../shared/TasksPage"), "TasksPage");
 const SettingsPage = page(() => import("../shared/SettingsPage"), "SettingsPage");
 const ChatPage = page(() => import("../chat/ChatPage"), "ChatPage");
@@ -33,6 +34,7 @@ export const managerRoutes: RouteObject = {
     { path: "schools/:orgId", element: <SchoolDetailPage /> },
     { path: "staff", element: <StaffOverviewPage /> },
     { path: "announcements", element: <AnnouncementsPage /> },
+    { path: "schedule", element: <SchedulePage /> },
     { path: "tasks", element: <TasksPage /> },
     { path: "chat", element: <ChatPage /> },
     { path: "settings", element: <SettingsPage /> },
