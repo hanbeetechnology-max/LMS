@@ -57,20 +57,25 @@ async function fetchRecentSignIns(): Promise<SignIn[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("auto_attendance_sessions")
-    .select("user_id, login_at, status, ended_at, profiles(full_name, role)")
+    .select("user_id, login_at, last_heartbeat_at, status, ended_at, profiles(full_name, role)")
     .order("login_at", { ascending: false })
-    .limit(60);
+    .limit(200);
   if (error || !data) return null;
   const out: SignIn[] = [];
-  for (const raw of data as unknown as Array<{ user_id: string; login_at: string; status: string; ended_at: string | null; profiles: { full_name: string | null; role: string | null } | { full_name: string | null; role: string | null }[] | null }>) {
+  const seen = new Set<string>();
+  for (const raw of data as unknown as Array<{ user_id: string; login_at: string; last_heartbeat_at: string; status: string; ended_at: string | null; profiles: { full_name: string | null; role: string | null } | { full_name: string | null; role: string | null }[] | null }>) {
     const p = Array.isArray(raw.profiles) ? raw.profiles[0] : raw.profiles;
     if (!p || !p.role || p.role === "student" || p.role === "manager") continue;
+    // One row per person (their latest sign-in), so repeated logins do not flood the card.
+    if (seen.has(raw.user_id)) continue;
+    seen.add(raw.user_id);
     out.push({
       key: `${raw.user_id}-${raw.login_at}`,
       name: p.full_name ?? "Unknown",
       role: ROLE_WORDS[p.role] ?? p.role.replace(/_/g, " "),
       at: raw.login_at,
-      active: !raw.ended_at && raw.status === "active",
+      // "Active" only while the session is still sending heartbeats (same 90 second rule the app uses).
+      active: !raw.ended_at && raw.status === "active" && Date.now() - new Date(raw.last_heartbeat_at).getTime() < 90_000,
     });
     if (out.length === 10) break;
   }
