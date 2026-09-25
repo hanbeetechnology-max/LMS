@@ -67,6 +67,25 @@ await asUser(ava); r = await tryq("select * from staff_attendance()"); check("a 
 await asUser(morgan); const ov = (await c.query("select * from hanbee_staff_overview()")).rows.find(x=>x.staff_id===info);
 check("manager overview counts late and absent days", ov && ov.late_days_last_30===1 && ov.absent_days_last_30>=1 && ov.days_worked_last_30===2, JSON.stringify(ov && {late:ov.late_days_last_30, absent:ov.absent_days_last_30, worked:ov.days_worked_last_30}));
 await asUser(jamie); r = await tryq("select * from hanbee_staff_overview()"); check("Hanbee staff cannot read the performance overview", !!r.e);
+
+// ---- clocking in on a holiday or a day off is never late (migration 0034)
+await asOwner();
+await c.query("update staff_work_settings set start_time='00:00', grace_minutes=0, work_days='{1,2,3,4,5,6,7}'");
+await c.query("delete from staff_time_entries where staff_id=$1",[info]);
+await c.query("delete from holidays where holiday_date between current_date-4 and current_date");
+await c.query("insert into holidays (name, holiday_date, scope) values ('T34 Holiday', current_date, 'center')");
+await c.query("insert into staff_time_entries (staff_id, work_date, clock_in, on_time) values ($1, current_date, now(), false)",[info]);
+await asUser(info);
+r = await one("select status from staff_attendance(null, current_date, current_date)"); check("a holiday clock-in counts as present, not late", r.status==="present", JSON.stringify(r));
+await asOwner();
+await c.query("delete from holidays where name='T34 Holiday'");
+await c.query("update staff_work_settings set work_days = array_remove('{1,2,3,4,5,6,7}'::int[], extract(isodow from current_date)::int)");
+await asUser(info);
+r = await one("select status from staff_attendance(null, current_date, current_date)"); check("a clock-in on a day off counts as present, not late", r.status==="present", JSON.stringify(r));
+await asOwner();
+await c.query("update staff_work_settings set work_days='{1,2,3,4,5,6,7}'");
+await asUser(info);
+r = await one("select status from staff_attendance(null, current_date, current_date)"); check("a normal working day past the start time is still late", r.status==="late", JSON.stringify(r));
 await c.query("rollback");
 await asOwner();
 const s = await one("select start_time::text st, grace_minutes g from staff_work_settings"); check("all changes rolled back (settings unchanged)", s.st==="09:30:00" && s.g===15, JSON.stringify(s));

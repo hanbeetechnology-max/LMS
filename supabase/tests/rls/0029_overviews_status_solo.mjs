@@ -7,6 +7,7 @@ const asUser = async (u) => { await c.query("reset role"); await c.query("set lo
 const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
 const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
 const one = async (sql,p) => (await c.query(sql,p)).rows[0];
+const baseOrg = (await c.query("select count(*)::int n from organizations")).rows[0].n;
 const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
   const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
   if (r.e) throw new Error("signup failed "+email+": "+r.e.message); return uid; };
@@ -55,7 +56,7 @@ check("Hanbee staff see every student with school, progress and new flag", rows.
 await asUser(sA1); r = await tryq("select * from course_students($1)",[course]); check("a student cannot call course_students", !!r.e);
 r = await tryq("select * from school_directory()"); check("a student cannot see the school directory", !!r.e);
 await asUser(ownerA); r = await tryq("select * from school_directory()"); check("school staff cannot see the school directory", !!r.e);
-await asUser(jamie); rows = (await c.query("select * from school_directory()")).rows; check("Hanbee staff see every school, pending first", rows.length===3 && rows[0].status==="pending" && rows.find(x=>x.name==="Alpha School").students===2, JSON.stringify(rows.map(x=>x.status)));
+await asUser(jamie); rows = (await c.query("select * from school_directory()")).rows; check("Hanbee staff see every school, pending first", rows.filter(x=>["Alpha School","Beta School","Pending School"].includes(x.name)).length===3 && rows[0].status==="pending" && rows.find(x=>x.name==="Alpha School").students===2, JSON.stringify(rows.map(x=>x.status)));
 r = await one("select site_tournament_overview() t, site_lms_overview() l"); check("site overviews work for Hanbee staff", r.t.teams.applied===1 && r.l.courses.published>=1);
 await asUser(ownerA); r = await tryq("select site_tournament_overview()"); check("school staff cannot read site overviews", !!r.e);
 await asUser(sA1); r = await tryq("select site_lms_overview()"); check("students cannot read site overviews", !!r.e);
@@ -111,6 +112,6 @@ await asUser(sA1); r = await tryq("select join_school($1)",[tokB]); check("a stu
 await asUser(morgan); r = await one("select count(*)::int n from audit_log where action in ('set_account_status','set_school_status','convert_to_solo','join_school')"); check("every status change is audit-logged", r.n>=6, `n=${r.n}`);
 await c.query("rollback");
 await asOwner();
-check("all test rows rolled back", (await one("select count(*)::int n from organizations")).n===0 && (await one("select count(*)::int n from courses where title='T29 Course'")).n===0 && (await one("select account_status::text s from profiles where id=$1",[info])).s==="active");
+check("all test rows rolled back", (await one("select count(*)::int n from organizations")).n===baseOrg && (await one("select count(*)::int n from courses where title='T29 Course'")).n===0 && (await one("select account_status::text s from profiles where id=$1",[info])).s==="active");
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

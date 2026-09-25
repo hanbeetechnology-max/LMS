@@ -14,6 +14,7 @@ const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, sch
 const start = async (u, other) => { await asUser(u); const r = await tryq("select start_conversation_with($1) v",[other]); return r.e ? {err:r.e.message} : {id:r.r.rows[0].v}; };
 const send = async (u, conv, body) => { await asUser(u); return tryq("insert into messages (conversation_id, sender_id, body) values ($1,$2,$3) returning id, kind, sender_id",[conv,u,body]); };
 
+const baseOrg = (await one("select count(*)::int n from organizations")).n;
 const before = { conv: (await one("select count(*)::int n from conversations")).n, msg:(await one("select count(*)::int n from messages")).n, part:(await one("select count(*)::int n from conversation_participants")).n };
 await c.query("begin");
 // ---- setup
@@ -85,7 +86,7 @@ let cs = await contactsOf(sA1); check("student contacts: school owner, school st
 cs = await contactsOf(solo); check("solo student contacts: course owner only", setEq(cs,["hs2"]), [...cs].join());
 cs = await contactsOf(sB1); check("student with dropped enrollment: only own school staff", setEq(cs,["ownerB"]), [...cs].join());
 cs = await contactsOf(teacherA); check("school staff contacts: own school + all Hanbee staff + managers, nobody from school B", ["ownerA","sA1","sA2","jamie","hs2","info","morgan","mgr2"].every(x=>cs.has(x)) && !["ownerB","sB1"].some(x=>cs.has(x)) && !cs.has("solo"), [...cs].join());
-cs = await contactsOf(hs2); check("Hanbee staff contacts: own course students, school owners, staff, managers", setEq(cs,["sA1","solo","ownerA","ownerB","jamie","info","morgan","mgr2"]), [...cs].join());
+cs = await contactsOf(hs2); { const exp=["sA1","solo","ownerA","ownerB","jamie","info","morgan","mgr2"]; const forb=Object.values(names).filter(n=>!exp.includes(n)); check("Hanbee staff contacts: own course students, school owners, staff, managers", exp.every(x=>cs.has(x)) && !forb.some(x=>cs.has(x)), [...cs].join()); }
 cs = await contactsOf(jamie); check("Hanbee staff without students sees no students or non-owner school staff", !["sA1","sA2","sB1","solo","teacherA"].some(x=>cs.has(x)) && cs.has("ownerA") && cs.has("hs2"), [...cs].join());
 await asUser(morgan); const mc = (await c.query("select relation from chat_contacts()")).rows; check("manager contacts: everyone active", mc.length >= 11, String(mc.length));
 await asUser(sA1); const rel = (await c.query("select relation, org_name from chat_contacts() order by relation")).rows; check("contacts carry relation and school name", rel.some(r=>r.relation==="school_staff"&&r.org_name==="Alpha")&&rel.some(r=>r.relation==="instructor"), JSON.stringify(rel));
@@ -209,6 +210,6 @@ await asOwner(); m = (await c.query("select tablename from pg_publication_tables
 
 await c.query("rollback"); await asOwner();
 const after = { conv: (await one("select count(*)::int n from conversations")).n, msg:(await one("select count(*)::int n from messages")).n, part:(await one("select count(*)::int n from conversation_participants")).n };
-check("everything rolled back", JSON.stringify(before)===JSON.stringify(after) && (await one("select count(*)::int n from profiles where email like '%@x.test'")).n===0 && (await one("select count(*)::int n from organizations")).n===0, JSON.stringify([before,after]));
+check("everything rolled back", JSON.stringify(before)===JSON.stringify(after) && (await one("select count(*)::int n from profiles where email like '%@x.test'")).n===0 && (await one("select count(*)::int n from organizations")).n===baseOrg, JSON.stringify([before,after]));
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

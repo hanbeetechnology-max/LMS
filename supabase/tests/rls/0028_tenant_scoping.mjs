@@ -8,6 +8,7 @@ const asAnon = async () => { await c.query("reset role"); await c.query("set loc
 const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
 const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
 const one = async (sql,p) => (await c.query(sql,p)).rows[0];
+const baseOrg = (await c.query("select count(*)::int n from organizations")).rows[0].n;
 const cnt = async (sql,p) => (await one(`select count(*)::int n from (${sql}) q`,p)).n;
 const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
   const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
@@ -102,6 +103,6 @@ await asUser(ava); check("seeded enrolled student still reads lessons", (await c
 check("seeded student still reads site-wide announcements", (await cnt("select 1 from announcements"))>0);
 await c.query("rollback");
 await asOwner();
-check("all test rows rolled back", (await cnt("select 1 from organizations"))===0 && (await cnt("select 1 from courses where title='T28 Course'"))===0);
+check("all test rows rolled back", (await cnt("select 1 from organizations"))===baseOrg && (await cnt("select 1 from courses where title='T28 Course'"))===0);
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

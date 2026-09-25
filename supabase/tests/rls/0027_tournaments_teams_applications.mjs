@@ -17,6 +17,8 @@ const auditN = async (a)=>{ await asOwner(); return (await one("select count(*):
 
 await c.query("begin");
 const baseAudit = (await one("select count(*)::int n from audit_log")).n;
+const baseT=(await one("select count(*)::int n from tournaments")).n, baseTT=(await one("select count(*)::int n from tournament_teams")).n, baseTR=(await one("select count(*)::int n from tournament_results")).n, baseO=(await one("select count(*)::int n from organizations")).n;
+const baseAct={}; for (const a of ["create_tournament","decide_team","decide_course_application","enroll_student"]) baseAct[a]=(await one("select count(*)::int n from audit_log where action=$1",[a])).n;
 // --- setup
 const oA=(await signup("owner-a@x.test",schoolMeta("Alpha School"))).uid, oB=(await signup("owner-b@x.test",schoolMeta("Beta School"))).uid, oC=(await signup("owner-c@x.test",schoolMeta("Gamma School"))).uid;
 const orgOf = async u=>(await one("select org_id from organization_members where user_id=$1",[u])).org_id;
@@ -55,7 +57,7 @@ r=await tryq("select create_tournament('bad','',now(),now()-interval '1 day','')
 
 // --- visibility of tournaments
 const cnt = async (sql,p)=>(await one(sql,p)).n;
-for (const [n,u,exp] of [["school staff A",staffA,2],["student a1",a1,2],["solo student",solo,2],["manager",morgan,2],["Hanbee staff",jamie,2]]) { await asUser(u); check(`${n} sees tournaments`, await cnt("select count(*)::int n from tournaments")===exp); }
+for (const [n,u,exp] of [["school staff A",staffA,2+baseT],["student a1",a1,2+baseT],["solo student",solo,2+baseT],["manager",morgan,2+baseT],["Hanbee staff",jamie,2+baseT]]) { await asUser(u); check(`${n} sees tournaments`, await cnt("select count(*)::int n from tournaments")===exp); }
 await asAnon(); r=await tryq("select count(*)::int n from tournaments"); check("anonymous sees no tournaments", !r.e ? r.r.rows[0].n===0 : true, r.e?.message);
 await asUser(a3); check("suspended student sees none", await cnt("select count(*)::int n from tournaments")===0);
 await asOwner(); await c.query("update organizations set status='pending' where id=$1",[orgB]); await asUser(staffB); check("staff of non-active school sees none", await cnt("select count(*)::int n from tournaments")===0);
@@ -94,8 +96,8 @@ check("student a1 sees team members' names", await cnt("select count(*)::int n f
 check("student a1 roster of other team empty", await cnt("select count(*)::int n from get_team_roster($1)",[teamB])===0);
 check("student a1 sees only own team members rows", await cnt("select count(*)::int n from tournament_team_members")===2);
 await asUser(b1); check("student b1 does not see team A", await cnt("select count(*)::int n from tournament_teams where id=$1",[teamA])===0);
-await asUser(jamie); check("Hanbee staff sees all teams", await cnt("select count(*)::int n from tournament_teams")===3);
-await asUser(morgan); check("manager sees all teams", await cnt("select count(*)::int n from tournament_teams")===3);
+await asUser(jamie); check("Hanbee staff sees all teams", await cnt("select count(*)::int n from tournament_teams")===3+baseTT);
+await asUser(morgan); check("manager sees all teams", await cnt("select count(*)::int n from tournament_teams")===3+baseTT);
 await asAnon(); r=await tryq("select count(*)::int n from tournament_teams"); check("anon sees no teams", r.e || r.r.rows[0].n===0);
 await asUser(staffA); check("list_addable_students excludes team members", await cnt("select count(*)::int n from list_addable_students($1)",[T])===0);
 
@@ -142,7 +144,7 @@ check("b1 sees leaderboard",(await lb(b1)).length===1); check("solo sees leaderb
 check("school staff sees leaderboard",(await lb(staffB)).length===1); check("manager sees leaderboard",(await lb(morgan)).length===1); check("Hanbee staff sees leaderboard",(await lb(jamie)).length===1);
 check("anon sees no leaderboard",(await lb("anon")).length===0); check("suspended student sees no leaderboard",(await lb(a3)).length===0);
 await asUser(a1); check("student cannot read raw results", await cnt("select count(*)::int n from tournament_results")===0);
-await asUser(jamie); check("Hanbee staff reads raw results", await cnt("select count(*)::int n from tournament_results")===1);
+await asUser(jamie); check("Hanbee staff reads raw results", await cnt("select count(*)::int n from tournament_results")===1+baseTR);
 // closed school: student sees nothing until solo
 await asOwner(); await c.query("update organizations set status='closed' where id=$1",[orgC]);
 await asUser(c1); check("closed-school student sees no tournaments", await cnt("select count(*)::int n from tournaments")===0);
@@ -150,7 +152,7 @@ check("closed-school student sees no leaderboard",(await lb(c1)).length===0);
 r=await tryq("select apply_for_course($1,true)",[course]); check("closed-school student cannot apply for course",!!r.e);
 await asUser(oC); check("closed-school staff sees nothing", await cnt("select count(*)::int n from tournaments")===0);
 await asOwner(); await c.query("update profiles set is_solo=true where id=$1",[c1]); await c.query("update organization_members set status='ended', ended_at=now() where user_id=$1",[c1]);
-await asUser(c1); check("after converting to solo the student sees tournaments", await cnt("select count(*)::int n from tournaments")===2);
+await asUser(c1); check("after converting to solo the student sees tournaments", await cnt("select count(*)::int n from tournaments")===2+baseT);
 
 // --- solo team
 await asUser(solo); r=await tryq("select create_solo_team($1) t",[T]); check("solo creates team of one",ok(r)); const soloTeam=r.r.rows[0].t;
@@ -206,13 +208,13 @@ await asUser(a1); check("student of closed school sees nothing now", await cnt("
 await asOwner();
 const actions=["create_tournament","update_tournament","decide_team","set_result","decide_course_application","enroll_student","withdraw_team"];
 for (const a of actions) { const n=await auditN(a); check(`audit row written: ${a}`, a==="withdraw_team"?n===0:n>=1, `n=${n}`); }
-check("audit counts", (await auditN("create_tournament"))===2 && (await auditN("decide_team"))===3 && (await auditN("decide_course_application"))===2 && (await auditN("enroll_student"))===1);
+check("audit counts", (await auditN("create_tournament"))===2+baseAct.create_tournament && (await auditN("decide_team"))===3+baseAct.decide_team && (await auditN("decide_course_application"))===2+baseAct.decide_course_application && (await auditN("enroll_student"))===1+baseAct.enroll_student);
 const rls=(await c.query("select relname, relrowsecurity from pg_class where relname in ('tournaments','tournament_teams','tournament_team_members','tournament_results','applications') and relnamespace='public'::regnamespace")).rows;
 check("RLS enabled on all 5 new tables", rls.length===5 && rls.every(x=>x.relrowsecurity), JSON.stringify(rls));
 await asAnon(); r=await tryq("select * from get_leaderboard($1)",[T]); check("anon cannot execute get_leaderboard",!!r.e);
 await c.query("rollback");
 await asOwner();
 const left=await one("select (select count(*) from tournaments)::int t,(select count(*) from tournament_teams)::int tt,(select count(*) from applications)::int a,(select count(*) from organizations)::int o,(select count(*) from profiles where email like '%@x.test')::int p,(select count(*) from audit_log)::int al");
-check("everything rolled back", left.t===0&&left.tt===0&&left.a===0&&left.o===0&&left.p===0&&left.al===baseAudit, JSON.stringify(left)+" base="+baseAudit);
+check("everything rolled back", left.t===baseT&&left.tt===baseTT&&left.a===0&&left.o===baseO&&left.p===0&&left.al===baseAudit, JSON.stringify(left)+" base="+baseAudit);
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

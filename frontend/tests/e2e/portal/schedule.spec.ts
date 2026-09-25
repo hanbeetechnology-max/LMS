@@ -111,8 +111,11 @@ test("manager schedule has the holiday form; it is not offered to Hanbee staff",
   await page.getByRole("link", { name: /^schedule$/i }).first().click();
   await expect(page).toHaveURL(/manager\/schedule/);
   await page.getByRole("button", { name: /^\+ ?add$/i }).first().click();
-  const holidayTab = page.getByRole("button", { name: "Holiday", exact: true }).last();
+  const dialog = page.getByRole("dialog");
+  const holidayTab = dialog.getByRole("button", { name: "holiday", exact: true });
   await expect(holidayTab).toBeVisible();
   await holidayTab.click();
-  await expect(page.getByLabel(/name/i).first()).toBeVisible();
+  await expect(page.getByTestId("holiday-form")).toBeVisible();
+  await expect(dialog.getByLabel("Holiday name")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Add holiday" })).toBeVisible();
 });
