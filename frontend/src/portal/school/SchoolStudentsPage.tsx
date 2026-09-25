@@ -134,7 +134,7 @@ export function SchoolStudentsPage() {
           </div>
         )}
         <InvitationsCard invitations={invitations.data ?? []} loading={invitations.loading} error={invitations.error} reload={invitations.reload} onResend={resend} />
-        {isOwner && <TeachersCard orgId={orgId} invitations={invitations.data ?? []} reload={invitations.reload} />}
+        {isOwner && <TeachersCard orgId={orgId} schoolName={schoolName} invitations={invitations.data ?? []} reload={invitations.reload} />}
       </div>
     </>
   );

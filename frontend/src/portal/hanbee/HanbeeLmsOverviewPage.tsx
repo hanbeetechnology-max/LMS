@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { AssessmentReviewPanel } from "../../components/app/AssessmentReviewPanel";
 import { fetchCourseStats, fetchSiteLmsOverview, type CourseStats } from "../../lib/portalApi";
 import { DataTable, ErrorBlock, LoadingBlock, PageHeader, StatCard, StatusBadge, useAsync, type Column } from "../kit";
 import { countOf, ProgressBar } from "./ui";
@@ -47,6 +48,10 @@ export function HanbeeLmsOverviewPage() {
           <StatCard label="Schools closed" value={countOf(o.schools, "closed")} />
         </div>
       ) : null}
+
+      <div className="mb-8 -mt-8">
+        <AssessmentReviewPanel />
+      </div>
 
       <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Courses</h2>
       {courses.loading && !courses.data ? (
