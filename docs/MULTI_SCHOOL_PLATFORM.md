@@ -117,17 +117,32 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 
 ## 10. Progress tracker
 
-- [x] Cleanup: 33 test signup accounts deleted (2 Hanbee staff, 1 student, 2 managers remain)
-- [x] 0022-0025 foundation, invite-only signup, verification, solo flag (proven, committed)
-- [x] 0026 chat v2 (97 checks); `frontend/src/lib/chatApi.ts`
-- [x] 0027 tournaments, teams, applications (149 checks); `frontend/src/lib/tournamentPortalApi.ts`
-- [x] 0028 tenant scoping (54 checks)
-- [x] 0029-0031 overviews, suspend/close/revoke, solo conversion, join a new school, hardening (56 checks). Sign-out Edge Function not needed: `set_account_status` bans sign-in and ends sessions, and every rule checks live status. Set JWT expiry short in the dashboard.
-- [ ] Portal kit, auth screens (login, join with token, register school, pending states), router and shells
-- [ ] Chat UI
-- [ ] Student, school staff, Hanbee staff, manager screens
-- [ ] Delete old mock pages and old browser tests; new role-based browser suite
-- [ ] `docs/FRONTEND_CONTRACT.md`, launch checklist, final regression
+- [x] Cleanup: 33 test signup accounts deleted
+- [x] Migrations 0022-0032 live, 438 database security checks passing (`supabase/tests/`)
+- [x] `lib/portalApi.ts`, `lib/inviteMail.ts`, `lib/chatApi.ts`, `lib/tournamentPortalApi.ts`
+- [x] Portal foundation: auth states in `AuthProvider` and `ProtectedRoute`, UI kit (`portal/kit`), per-role routes, demo seed (`supabase/tests/seed-demo.mjs`)
+- [x] Auth and public screens: login, register school, join with school link, personal invite, Hanbee staff application, pending, suspended, school-inactive; `/tournament` is marketing only
+- [x] Chat (WhatsApp-style): list, thread, ticks, unread, typing, group info with add/remove for those allowed, realtime with polling fallback
+- [x] Shared pages: announcements (site-wide and per school), schedule (day, week, month), tasks, settings
+- [x] Student portal: Tournament | Learning slide switcher, tournament overview, leaderboard, team, learning overview, courses and applying, closed-school banner with switch to solo
+- [x] School staff portal: overview (Tournament | Learning), students, bulk invite by own mail app, invitations, co-teacher invite with copy link, teams, courses
+- [x] Hanbee staff portal: my space (clock in/out, tasks), tournament management, LMS overview (with quiz review), schools directory with first-verifier-wins, school detail, courses with student table, applications
+- [x] Manager portal: monitor, verifications, schools, Hanbee staff overview
+- [x] Old mock pages (48 files) and 29 obsolete browser specs removed
+- [x] Browser suite: 59 passed, 1 skipped, 0 failed (`frontend/tests/e2e/`, run with `--workers=1`)
+- [ ] Visual review of every screen at 1280px and 390px by someone other than the builder (builders read screenshots for some screens only)
+- [ ] Untested-by-browser flows: team create, add, apply and withdraw; solo team-of-one apply; course apply; closed-school banner; suspended and school-inactive pages
+- [ ] Delete the demo data before real users (see launch checklist)
+- [ ] Handover pass: final `docs/FRONTEND_CONTRACT.md` review for the polished redesign
+
+### Known gaps (found while building, not yet fixed)
+- Write functions in `portalApi.ts` and `tournamentPortalApi.ts` return only true or false, so screens show a generic "the server refused" message instead of the database's own reason.
+- `chatApi.ts` cannot tell a rate-limit refusal from a contact-rule refusal and exposes no read state (`chatExtras.ts` in `portal/chat` works around both).
+- Tasks have no pin (the table has no pinned column); open tasks are listed first.
+- The verifications page cannot show a school's registration number (only the school detail page can).
+- Old draft courses ("Untitled Skip Test", "Intro to Robotics", about 20) from earlier test runs still sit in the database.
+- Only the student switcher pill slides; page content fades rather than slides.
+- `lib/rosterApi.ts` is now unused (kept as a data module).
 
 ## 11. Launch checklist (before real users)
 

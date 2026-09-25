@@ -1173,3 +1173,15 @@ Full design, decisions and status: `docs/MULTI_SCHOOL_PLATFORM.md`. Security tra
 ## 2026-09-24 - Chat v2 backend (migration 0026, chatApi.ts)
 
 Applied live. Contact rules live in the database (`chat_relation_dir`, `chat_can_message`, `chat_contacts`, `start_conversation_with`): students reach only their school's owner/staff and Hanbee staff who own a course they are enrolled in (active/completed); school staff reach their own school, all approved Hanbee staff and managers; Hanbee staff reach only their own courses' students, school owners, staff and managers; managers reach everyone active. Replies are allowed in both directions once a direct chat exists. Automatic school groups ("<school> - Students") with join/leave system messages, admin-only add/remove (`chat_add_member`, `chat_remove_member`), manager pinned chats (`provision_manager_chats`), read state (`chat_mark_read`, `chat_conversations`, `chat_members`), 30 messages/minute limit, system messages only from trusted functions (guard uses current_user, so a client setting the flag itself is not trusted), realtime publication for messages and conversation_participants. Data layer: `frontend/src/lib/chatApi.ts` (not wired into any page). Tests: `supabase/tests/rls/0026_chat_v2.mjs` (97 checks).
+
+
+### 2026-09-25 - Portal frontend built for all roles, merged, and integrated
+
+Full status: `docs/MULTI_SCHOOL_PLATFORM.md` section 10. Shared spec and handover: `docs/FRONTEND_CONTRACT.md`.
+
+- Seven parallel builders (auth, chat, shared pages, student, school staff, Hanbee staff, manager), each in an isolated git worktree on its own folder under `frontend/src/portal/`; merged one at a time with no conflicts.
+- Integration fixes made by the lead: the quiz review panel was orphaned by the old staff dashboard (now on `/staff/lms`); co-teacher invitations now give the owner a copy link and a mail-app link (token added to `fetchSchoolInvitations`); the manager may edit school events on the schedule (the database already allowed it).
+- Removed 48 unreachable old pages, components and mocks and 29 obsolete browser specs; kept the data modules.
+- Found and fixed while testing: a browser test revoked an invitation but ended before the request finished (it now waits for the confirmation), and one test run left a pending invitation which was revoked by hand.
+- Verified: a full page reload and a direct deep link keep the person signed in for all four roles (`tests/e2e/portal/session.spec.ts`), which settled a builder's report that sessions were lost.
+- Browser suite: 59 passed, 1 skipped (clock-in test, skipped when the day is already closed), 0 failed.
