@@ -12,6 +12,30 @@ export interface TaskRow {
   title: string;
   dueDate: string | null;
   done: boolean;
+  priority: TaskPriority;
+  status: TaskStatus;
+  description: string | null;
+  createdAt: string | null;
+}
+
+export type TaskPriority = "low" | "medium" | "high";
+export type TaskStatus = "todo" | "in_progress" | "done";
+
+const COLS = "id, staff_id, title, due_date, done, priority, status, description, created_at";
+
+function mapRow(row: TaskDbRow): TaskRow {
+  return {
+    id: row.id,
+    staffId: row.staff_id,
+    staffName: row.profiles?.full_name ?? null,
+    title: row.title,
+    dueDate: row.due_date,
+    done: row.done,
+    priority: row.priority ?? "medium",
+    status: row.status ?? (row.done ? "done" : "todo"),
+    description: row.description ?? null,
+    createdAt: row.created_at ?? null,
+  };
 }
 
 interface TaskDbRow {
@@ -20,6 +44,10 @@ interface TaskDbRow {
   title: string;
   due_date: string | null;
   done: boolean;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  description?: string | null;
+  created_at?: string | null;
   profiles: { full_name: string } | null;
 }
 
@@ -32,18 +60,11 @@ export async function fetchMyTasks(): Promise<TaskRow[]> {
   if (!myId) return [];
   const { data, error } = await supabase
     .from("staff_tasks")
-    .select("id, staff_id, title, due_date, done")
+    .select(COLS)
     .eq("staff_id", myId)
     .order("due_date", { ascending: true });
   if (error || !data) return [];
-  return data.map((row) => ({
-    id: row.id,
-    staffId: row.staff_id,
-    staffName: null,
-    title: row.title,
-    dueDate: row.due_date,
-    done: row.done,
-  }));
+  return (data as unknown as TaskDbRow[]).map((row) => ({ ...mapRow(row), staffName: null }));
 }
 
 /** Manager-only per RLS ("...manager reads all") — a non-manager caller
@@ -54,29 +75,33 @@ export async function fetchAllTasksForManager(): Promise<TaskRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("staff_tasks")
-    .select("id, staff_id, title, due_date, done, profiles(full_name)")
+    .select(`${COLS}, profiles(full_name)`)
     .order("due_date", { ascending: true });
   if (error || !data) return [];
-  return (data as unknown as TaskDbRow[]).map((row) => ({
-    id: row.id,
-    staffId: row.staff_id,
-    staffName: row.profiles?.full_name ?? null,
-    title: row.title,
-    dueDate: row.due_date,
-    done: row.done,
-  }));
+  return (data as unknown as TaskDbRow[]).map(mapRow);
 }
 
 /** RLS ("a staff member writes only their own tasks") requires staff_id =
  *  auth.uid(), resolved here from the acting user's session. */
-export async function createTask(title: string, dueDate?: string): Promise<string | null> {
+export async function createTask(
+  title: string,
+  dueDateOrOptions?: string | { dueDate?: string | null; priority?: TaskPriority; status?: TaskStatus; description?: string | null },
+): Promise<string | null> {
+  const o = typeof dueDateOrOptions === "string" ? { dueDate: dueDateOrOptions } : (dueDateOrOptions ?? {});
   if (!supabase) return null;
   const { data: userData } = await supabase.auth.getUser();
   const staffId = userData?.user?.id;
   if (!staffId) return null;
   const { data, error } = await supabase
     .from("staff_tasks")
-    .insert({ staff_id: staffId, title, due_date: dueDate ?? null })
+    .insert({
+      staff_id: staffId,
+      title,
+      due_date: o.dueDate || null,
+      ...(o.priority ? { priority: o.priority } : {}),
+      ...(o.status ? { status: o.status } : {}),
+      ...(o.description ? { description: o.description } : {}),
+    })
     .select("id")
     .single();
   if (error || !data) return null;
@@ -100,11 +125,21 @@ export async function deleteTask(id: string): Promise<boolean> {
 }
 
 /** Additive: edit a task's title and/or due date (null clears the date). Own tasks only per RLS. */
-export async function updateTask(id: string, patch: { title?: string; dueDate?: string | null }): Promise<boolean> {
+export async function updateTask(id: string, patch: { title?: string; dueDate?: string | null; priority?: TaskPriority; status?: TaskStatus; description?: string | null }): Promise<boolean> {
   if (!supabase) return false;
   const dbPatch: Record<string, string | null> = {};
+  if (patch.priority !== undefined) dbPatch.priority = patch.priority;
+  if (patch.status !== undefined) dbPatch.status = patch.status;
+  if (patch.description !== undefined) dbPatch.description = patch.description ?? "";
   if (patch.title !== undefined) dbPatch.title = patch.title;
   if (patch.dueDate !== undefined) dbPatch.due_date = patch.dueDate;
   const { error } = await supabase.from("staff_tasks").update(dbPatch).eq("id", id);
+  return !error;
+}
+
+/** Move a task between columns (own tasks only per RLS). */
+export async function setTaskStatus(id: string, status: TaskStatus): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from("staff_tasks").update({ status }).eq("id", id);
   return !error;
 }
