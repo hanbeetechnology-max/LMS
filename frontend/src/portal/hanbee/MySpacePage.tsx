@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useAuth } from "../../lib/AuthProvider";
 import { Link } from "react-router-dom";
 import { useToast } from "../../lib/ToastProvider";
 import { clockIn, clockOut, fetchMyTimeHistory, type TimeEntryRow } from "../../lib/staffTimeApi";
 import { createTask, deleteTask, fetchMyTasks, toggleTaskDone, type TaskRow } from "../../lib/staffTasksApi";
 import { fetchSchoolDirectory, fetchSiteLmsOverview, fetchSiteTournamentOverview } from "../../lib/portalApi";
-import { Card, EmptyState, ErrorBlock, LoadingBlock, PageHeader, formatDate, formatTime, useAsync } from "../kit";
+import { Card, StatCard, EmptyState, ErrorBlock, LoadingBlock, PageHeader, formatDate, formatTime, useAsync } from "../kit";
 import { btn, inputClass, Field, REFUSED } from "./ui";
 
 function hoursBetween(entry: TimeEntryRow, now: number): number {
@@ -53,7 +54,7 @@ function ClockPanel() {
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
       <Card>
-        <p className="font-mono text-xs uppercase tracking-[0.1em] text-(--color-mist)">Today</p>
+        <p className="text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">Today</p>
         <p className="mt-2 font-display text-xl font-semibold text-(--color-ink)" data-testid="clock-status">
           {clockedIn ? `Clocked in at ${formatTime(todayEntry!.clockIn)}` : doneToday ? `Clocked out at ${formatTime(todayEntry!.clockOut)}` : "Not clocked in"}
         </p>
@@ -61,13 +62,13 @@ function ClockPanel() {
         {doneToday ? (
           <p className="mt-4 text-sm text-(--color-slate)">You have already clocked out today. See you tomorrow.</p>
         ) : (
-          <button type="button" onClick={toggle} disabled={busy} className={`${clockedIn ? btn.secondary : btn.primary} mt-4 min-h-14 w-full text-base`}>
+          <button type="button" onClick={toggle} disabled={busy} className={`${clockedIn ? btn.secondary : btn.primary} mt-4 min-h-16 w-full text-lg`}>
             {busy ? "Working..." : clockedIn ? "Clock out" : "Clock in"}
           </button>
         )}
       </Card>
       <Card>
-        <p className="font-mono text-xs uppercase tracking-[0.1em] text-(--color-mist)">Last 7 days</p>
+        <p className="text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">Last 7 days</p>
         {entries.length === 0 ? (
           <p className="mt-3 text-sm text-(--color-slate)">No time entries yet.</p>
         ) : (
@@ -175,7 +176,7 @@ function AttentionStrip() {
   ];
   return (
     <section aria-label="Needs your attention" className="mb-6">
-      <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.1em] text-(--color-mist)">Needs your attention</h2>
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">Needs your attention</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         {items.map((i) => (
           <Link key={i.to} to={i.to} className={`flex min-h-11 items-center gap-3 rounded-2xl border px-4 py-3 transition-colors hover:bg-(--color-cloud) ${i.n > 0 ? "border-(--color-amber-deep)/40 bg-(--color-amber-soft)" : "border-(--color-line) bg-(--color-paper)"}`}>
@@ -188,11 +189,30 @@ function AttentionStrip() {
   );
 }
 
+function TaskSummary() {
+  const { data } = useAsync<TaskRow[]>(fetchMyTasks, []);
+  const open = (data ?? []).filter((t) => !t.done);
+  const n = (p: string) => open.filter((t) => t.priority === p).length;
+  return (
+    <section aria-label="Open tasks by priority" className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatCard label="Open tasks" value={open.length} />
+      <StatCard label="High priority" value={n("high")} tone={n("high") > 0 ? "bad" : "neutral"} />
+      <StatCard label="Medium priority" value={n("medium")} />
+      <StatCard label="Low priority" value={n("low")} />
+    </section>
+  );
+}
+
 export function MySpacePage() {
+  const { profile } = useAuth();
+  const first = (profile?.fullName ?? "").split(" ")[0];
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   return (
     <>
-      <PageHeader title="My space" subtitle="Clock in and out, and keep track of your own tasks." />
+      <PageHeader title="My space" subtitle={`${greet}${first ? `, ${first}` : ""}. Your day, your hours and what needs a decision.`} />
       <AttentionStrip />
+      <TaskSummary />
       <ClockPanel />
       <div className="mt-6">
         <TasksPanel />

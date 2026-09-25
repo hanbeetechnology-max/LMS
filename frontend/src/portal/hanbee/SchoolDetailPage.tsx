@@ -28,7 +28,7 @@ const TABS = [
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="font-mono text-xs uppercase tracking-[0.08em] text-(--color-mist)">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">{label}</dt>
       <dd className="mt-0.5 break-words text-sm text-(--color-ink)">{children}</dd>
     </div>
   );
@@ -52,7 +52,7 @@ export function SchoolDetailPage() {
   const [schoolAction, setSchoolAction] = useState<SchoolAction | null>(null);
 
   const back = (
-    <Link to={listPath} className="mb-4 inline-flex min-h-11 items-center text-sm font-medium text-(--color-violet) hover:underline">
+    <Link to={listPath} className="mb-4 inline-flex min-h-11 items-center text-sm font-medium text-(--color-accent) hover:underline">
       Back to schools
     </Link>
   );

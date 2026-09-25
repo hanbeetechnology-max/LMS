@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchCourseStats, fetchCourseStudents, type CourseStats, type CourseStudentRow } from "../../lib/portalApi";
 import { Badge, Card, EmptyState, ErrorBlock, LoadingBlock, PageHeader, StatusBadge, formatDate, useAsync } from "../kit";
@@ -64,7 +64,7 @@ function StudentsTable({ course }: { course: CourseStats }) {
             <thead>
               <tr className="border-b border-(--color-line) bg-(--color-cloud)">
                 {heads.map((h) => (
-                  <th key={h.key} scope="col" aria-sort={sort.key === h.key ? (sort.dir === 1 ? "ascending" : "descending") : "none"} className="px-3 py-2.5 font-mono text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">
+                  <th key={h.key} scope="col" aria-sort={sort.key === h.key ? (sort.dir === 1 ? "ascending" : "descending") : "none"} className="px-3 py-2.5 text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">
                     <button type="button" onClick={() => setSort({ key: h.key, dir: sort.key === h.key && sort.dir === 1 ? -1 : 1 })} className="inline-flex min-h-8 items-center gap-1 hover:text-(--color-ink)">
                       {h.label}
                       <span aria-hidden="true">{sort.key === h.key ? (sort.dir === 1 ? "▲" : "▼") : ""}</span>
@@ -120,13 +120,23 @@ function StudentsTable({ course }: { course: CourseStats }) {
 export function CoursesPage() {
   const { data, loading, error, reload } = useAsync<CourseStats[]>(fetchCourseStats, []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const courses = data ?? [];
+  const [showDrafts, setShowDrafts] = useState(false);
+  const all = data ?? [];
+  const courses = showDrafts ? all : all.filter((c) => c.status !== "draft" || c.students > 0);
+  const hiddenDrafts = all.length - courses.length;
+  const tableRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (selectedId === null && courses.length > 0) setSelectedId((courses.find((c) => c.students > 0) ?? courses[0]).courseId);
+  }, [courses, selectedId]);
+  useEffect(() => {
+    if (selectedId) tableRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedId]);
   const selected = courses.find((c) => c.courseId === selectedId) ?? null;
 
   return (
     <>
       <PageHeader
-        title="Course cards"
+        title="Courses"
         subtitle="Pick a course to see who is enrolled and how they are doing."
         actions={
           <Link to="/staff/courses/new" className={btn.primary}>
@@ -134,6 +144,12 @@ export function CoursesPage() {
           </Link>
         }
       />
+      {(hiddenDrafts > 0 || showDrafts) && (
+        <label className="mb-4 flex min-h-11 items-center gap-2 text-sm text-(--color-ink-soft)">
+          <input type="checkbox" checked={showDrafts} onChange={(e) => setShowDrafts(e.target.checked)} className="size-5" />
+          Show empty draft courses{hiddenDrafts > 0 ? ` (${hiddenDrafts} hidden)` : ""}
+        </label>
+      )}
       {loading && !data ? (
         <LoadingBlock />
       ) : error ? (
@@ -177,7 +193,7 @@ export function CoursesPage() {
           })}
         </div>
       )}
-      {selected && <StudentsTable key={selected.courseId} course={selected} />}
+      <div ref={tableRef}>{selected && <StudentsTable key={selected.courseId} course={selected} />}</div>
     </>
   );
 }
