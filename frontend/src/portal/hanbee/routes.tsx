@@ -14,6 +14,7 @@ const SchoolDetailPage = page(() => import("./SchoolDetailPage"), "SchoolDetailP
 const CoursesPage = page(() => import("./CoursesPage"), "CoursesPage");
 const ApplicationsPage = page(() => import("./ApplicationsPage"), "ApplicationsPage");
 const AnnouncementsPage = page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
+const TasksPage = page(() => import("../shared/TasksPage"), "TasksPage");
 const SchedulePage = page(() => import("../shared/SchedulePage"), "SchedulePage");
 const SettingsPage = page(() => import("../shared/SettingsPage"), "SettingsPage");
 const ChatPage = page(() => import("../chat/ChatPage"), "ChatPage");
@@ -42,6 +43,7 @@ export const hanbeeRoutes: RouteObject = {
     { path: "applications", element: <ApplicationsPage /> },
     { path: "announcements", element: <AnnouncementsPage /> },
     { path: "schedule", element: <SchedulePage /> },
+    { path: "tasks", element: <TasksPage /> },
     { path: "chat", element: <ChatPage /> },
     { path: "settings", element: <SettingsPage /> },
   ],

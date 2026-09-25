@@ -11,6 +11,7 @@ const SchoolStudentsPage = page(() => import("./SchoolStudentsPage"), "SchoolStu
 const SchoolTeamsPage = page(() => import("./SchoolTeamsPage"), "SchoolTeamsPage");
 const SchoolCoursesPage = page(() => import("./SchoolCoursesPage"), "SchoolCoursesPage");
 const AnnouncementsPage = page(() => import("../shared/AnnouncementsPage"), "AnnouncementsPage");
+const TasksPage = page(() => import("../shared/TasksPage"), "TasksPage");
 const SchedulePage = page(() => import("../shared/SchedulePage"), "SchedulePage");
 const SettingsPage = page(() => import("../shared/SettingsPage"), "SettingsPage");
 const ChatPage = page(() => import("../chat/ChatPage"), "ChatPage");
@@ -31,6 +32,7 @@ export const schoolRoutes: RouteObject = {
     { path: "teams", element: <SchoolTeamsPage /> },
     { path: "announcements", element: <AnnouncementsPage /> },
     { path: "schedule", element: <SchedulePage /> },
+    { path: "tasks", element: <TasksPage /> },
     { path: "chat", element: <ChatPage /> },
     { path: "courses", element: <SchoolCoursesPage /> },
     { path: "settings", element: <SettingsPage /> },
