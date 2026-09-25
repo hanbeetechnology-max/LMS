@@ -19,6 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Teams", to: "/school/teams", Icon: TrophyIcon },
   { label: "Announcements", to: "/school/announcements", Icon: AnnouncementIcon },
   { label: "Schedule", to: "/school/schedule", Icon: SchedulingIcon },
+  { label: "Tasks", to: "/school/tasks", Icon: SchedulingIcon },
   { label: "Chat", to: "/school/chat", Icon: MessagingIcon },
   { label: "Courses", to: "/school/courses", Icon: CoursesIcon },
 ];
