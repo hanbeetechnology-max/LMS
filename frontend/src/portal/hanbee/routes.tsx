@@ -7,6 +7,7 @@ const page = <T extends Record<string, unknown>>(load: () => Promise<T>, name: k
   lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType })));
 
 const MySpacePage = page(() => import("./MySpacePage"), "MySpacePage");
+const AttendancePage = page(() => import("./AttendancePage"), "AttendancePage");
 const TournamentManagePage = page(() => import("./TournamentManagePage"), "TournamentManagePage");
 const HanbeeLmsOverviewPage = page(() => import("./HanbeeLmsOverviewPage"), "HanbeeLmsOverviewPage");
 const SchoolsPage = page(() => import("./SchoolsPage"), "SchoolsPage");
@@ -33,6 +34,7 @@ export const hanbeeRoutes: RouteObject = {
   children: [
     { index: true, element: <Navigate to="my-space" replace /> },
     { path: "my-space", element: <MySpacePage /> },
+    { path: "attendance", element: <AttendancePage /> },
     { path: "tournament", element: <TournamentManagePage /> },
     { path: "lms", element: <HanbeeLmsOverviewPage /> },
     { path: "schools", element: <SchoolsPage /> },
