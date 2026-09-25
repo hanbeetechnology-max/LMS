@@ -1208,3 +1208,9 @@ Added `supabase/tests/seed-demo-full.mjs` (courses, progress, certificate, appli
 - Found and fixed while reviewing screenshots: 22 junk draft courses from old test runs buried the LMS overview (deleted after confirming no sections, enrollments or applications); attendance counted days before an account existed as absent (migration 0035); the tournament pickers on the school Teams and Hanbee Tournament pages defaulted to the completed tournament; about 45 old test announcements, 25 test chat messages and 2 test events swamped real content (deleted); the base seed added a duplicate pending invitation every run.
 - Demo data: three extra courses, a completed second tournament, more teams, a second Hanbee staff member, pending school and staff applications (the owner has since verified the school and approved the applicant with the real manager login), announcements, events, holidays, tasks, student and staff attendance history and chat conversations.
 - Verification: database suites 472 checks, 0 failed; browser suite 77 passed, 5 skipped, 0 failed; demo-content spec passes for all four roles (40 pages).
+
+
+### 2026-09-25 - Lesson reviews and certificates (migration 0036)
+
+- Gap found: quiz reviews lived only in a small widget on the Hanbee LMS page, and certificates had no list for anyone. Added `list_assessment_reviews()` and `list_certificates_overview()` (school staff limited to their own students; students refused), a 14-check security suite, and screens for all four roles (see `docs/MULTI_SCHOOL_PLATFORM.md`). The assessment browser test now verifies on `/staff/reviews`.
+- Verification: database suites 486 checks, 0 failed; browser suite 78 passed, 5 skipped, 0 failed after rerunning one spec that a network outage (DNS failure to the database host) had broken mid-run.

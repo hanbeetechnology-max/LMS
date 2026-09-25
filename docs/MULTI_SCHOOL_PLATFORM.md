@@ -63,6 +63,7 @@ Every rule lives in the database, never only in the browser. Suspended or revoke
 | 0030 | Fix found by the 0029 test: `join_school` could not mark its invitation accepted; trusted-write flag for the invitation guard |
 | 0031 | Hardening: trusted-write flags are honoured only when the running role is not `authenticated` or `anon` |
 | 0033 | Task priority (low, medium, high) and status (todo, in progress, done) replacing pinning; `staff_work_settings` (start time, grace, time zone, working days; only the manager changes it); lateness computed by the server; `staff_attendance()` per day (present, late, absent, holiday, off, today, upcoming; holidays and days off never count as absent); the manager's performance overview gains late days, absent days and high-priority tasks |
+| 0036 | `list_assessment_reviews()` and `list_certificates_overview()`: lesson reviews and certificates for the manager and Hanbee staff (everything) and school staff (own school only); students are refused |
 | 0034 | Working on a holiday or a day off counts as present, never late |
 | 0028 | **Tenant scoping**: announcements (`org_id`, pinned, edit and delete rules), calendar (`org_id`, personal `owner_id`), school staff read-only enrollments, discussions limited to enrolled students, profile visibility by school, anonymous tournament-registration insert closed, revocation honoured by course access and lesson completion |
 
@@ -114,7 +115,7 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 
 ## 9. Testing
 
-- **Database (built):** `supabase/tests/rls/*.mjs` impersonate real roles and run inside a rolled-back transaction. Eight suites, 472 checks, all independent of the demo data: 0016-0021 regressions (15), 0023 (22), 0024 (45), 0026 chat (97), 0027 tournaments (149), 0028 (54), 0029 (56), 0033 tasks and staff attendance (33). Run them all after any policy change. See `supabase/tests/README.md`.
+- **Database (built):** `supabase/tests/rls/*.mjs` impersonate real roles and run inside a rolled-back transaction. Nine suites, 486 checks, all independent of the demo data: 0016-0021 regressions (15), 0023 (22), 0024 (45), 0026 chat (97), 0027 tournaments (149), 0028 (54), 0029 (56), 0033 tasks and staff attendance (34), 0036 reviews and certificates (14). Run them all after any policy change. See `supabase/tests/README.md`.
 - **Browser (to build):** small role-based Playwright suite, one worker: school registers and is verified; invites; student joins and sees tournament first; school A cannot see school B; revoke hides tournament; chat live between two sessions; team apply shows the QR step. The old mock-based specs are deleted once the old pages are replaced. Known pre-existing failures: 5 dark-mode contrast specs and one theme-toggle spec.
 
 ## 10. Progress tracker
@@ -136,6 +137,7 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 - [x] Tasks redesigned: List and Board, Low/Medium/High priority, manager-only "All employees' tasks" tab (read only); Tasks menu for Hanbee staff, school staff and manager
 - [x] Schedule redesigned like the reference: Week, Day, Month, mini calendar, holidays on the calendar, manager adds and deletes holidays; manager gets a Schedule menu item
 - [x] Hanbee staff Attendance page; manager performance view (late, absent, high-priority tasks, detail panel) and a Working hours card
+- [x] Lesson reviews and certificates for all roles: Hanbee staff Reviews (Waiting/Verified/All, verify, countdown to the 10-minute automatic unlock) and Certificates (search, verify box); manager read-only versions; school staff Lesson reviews and Certificates tabs on Courses; student Reviews, Certificates and a printable certificate page
 - [ ] Team formation inside a school (students propose, school staff approve, HANBEE verifies): plan agreed in chat, waiting on the owner's answer whether students may start teams; needs a captain, team invitations, min and max team size, and a "proposed" status
 - [x] School staff, Hanbee staff and manager dashboards restyled to match the student template look (revoked invitations hidden behind a toggle; manager Monitor gains Recent sign-ins, one row per person)
 - [x] Demo data for every page of every role (`supabase/tests/seed-demo.mjs` then `seed-demo-full.mjs`), a safe `cleanup-demo.mjs` (dry run by default; `--yes`, `--rollback-test`, `--include-seeded`), and an on-demand `demo-content.spec.ts` (`DEMO_CONTENT=1`) that opens every page for all four roles and screenshots it
