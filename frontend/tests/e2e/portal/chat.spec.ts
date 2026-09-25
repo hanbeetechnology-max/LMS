@@ -61,7 +61,7 @@ test("group message appears live, unread badge shows and clears, no reload", asy
   const composer = owner.page.getByLabel("Type a message");
   await composer.fill(body);
   await composer.press("Enter");
-  await expect(owner.page.getByText(body)).toBeVisible();
+  await expect(owner.page.getByText(body, { exact: true })).toBeVisible();
 
   // Badge on student's row, live
   const badge = row(student.page, GROUP).getByLabel(/\d+ unread/);
@@ -69,7 +69,7 @@ test("group message appears live, unread badge shows and clears, no reload", asy
 
   // Opening clears it and shows the message
   await row(student.page, GROUP).click();
-  await expect(student.page.getByText(body)).toBeVisible({ timeout: 15000 });
+  await expect(student.page.getByText(body, { exact: true })).toBeVisible({ timeout: 15000 });
   await expect(student.page).toHaveURL(/\?c=/);
   await expect(row(student.page, GROUP).getByLabel(/\d+ unread/)).toHaveCount(0, { timeout: 15000 });
 
@@ -77,7 +77,7 @@ test("group message appears live, unread badge shows and clears, no reload", asy
   const second = `TEST portal-chat live ${STAMP}`;
   await owner.page.getByLabel("Type a message").fill(second);
   await owner.page.getByLabel("Type a message").press("Enter");
-  await expect(student.page.getByText(second)).toBeVisible({ timeout: 15000 });
+  await expect(student.page.getByText(second, { exact: true })).toBeVisible({ timeout: 15000 });
 });
 
 test("student has no add or remove controls; owner does", async () => {
@@ -114,14 +114,14 @@ test("direct chat ticks turn blue after the other person opens it", async () => 
   await expect(composer).toBeVisible({ timeout: 15000 });
   await composer.fill(body);
   await composer.press("Enter");
-  await expect(p.getByText(body)).toBeVisible();
+  await expect(p.getByText(body, { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "Delivered" }).last()).toBeVisible({ timeout: 15000 });
 
   // Student sees the unread chat live, opens it, and the owner's ticks turn blue.
   const srow = row(student.page, ownerName);
   await expect(srow.getByLabel(/\d+ unread/)).toBeVisible({ timeout: 20000 });
   await srow.click();
-  await expect(student.page.getByText(body)).toBeVisible();
+  await expect(student.page.getByText(body, { exact: true })).toBeVisible();
   await expect(p.getByRole("img", { name: "Read" }).last()).toBeVisible({ timeout: 20000 });
 });
 
