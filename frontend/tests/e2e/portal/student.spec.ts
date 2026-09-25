@@ -94,7 +94,7 @@ test.describe("student portal", () => {
       await expect(page.locator("main").getByText(label, { exact: true }).first()).toBeVisible();
     }
     await expect(page.getByRole("alert")).toHaveCount(0);
-    await expect(page.getByText(/no sessions recorded yet/i).first()).toBeVisible();
+    await expect(page.getByText(/no sessions recorded yet/i).or(page.getByRole("row", { name: /present|absent|late|excused/i }).first()).first()).toBeVisible();
   });
 
   test("390px has no sideways scroll on any student page", async ({ page }) => {

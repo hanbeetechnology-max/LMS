@@ -84,3 +84,15 @@ Existing data: tournament "Hanbee RC Cup 2026" (about three weeks out), team Alp
 ## Handover notes for the redesign
 
 A new skin replaces each `portal/<role>/*Page.tsx` and the kit; the rules, data modules and routes stay. Keep exported page names stable, keep the route map above, and keep calling the `lib` modules so nothing security-relevant moves into the UI.
+
+## Demo data (full)
+
+Run in `supabase/tests` (needs `SUPABASE_DB_URL`): `node seed-demo.mjs` then `node seed-demo-full.mjs` (both idempotent). Password for `@hanbee.test`: `Demo#12345`.
+
+New accounts: `demo.staff2@hanbee.test` (Priya Nair, approved Hanbee staff, invited by the manager), `demo.staffapp@hanbee.test` (Hanbee staff application, unapproved), `demo.owner3@hanbee.test` (owner of "Riverside School (demo)", pending), `demo.invitee1/2@hanbee.test` (pending invitations) and `demo.invitee3` (expired). Existing accounts are unchanged.
+
+Data: courses "RC Car Basics (demo)", "Race Strategy (demo)", "Pit Stop Practice (demo)" (open to apply) with varied student progress, a certificate, two applications waiting and one approved; tournament "Hanbee Winter Cup (demo)" (completed, two results), team "Alpha Sprint" awaiting a decision and draft "Sample Juniors" in the RC Cup; site and school announcements, events, a holiday, tasks for four people; student attendance history; 20 days of Hanbee staff clock history (jamie backdated account start, staff2 too); chat conversations with unread badges for demo.s1 and morgan.
+
+Clean up: `node cleanup-demo.mjs` (dry run, rolls back, prints counts), `--rollback-test` (also proves the rows are gone in the transaction), `--yes` (deletes), `--include-seeded` (also ava, jamie, morgan, "Intro to Design", "Hanbee RC Cup 2026"; final launch clean-up only). Default keeps the RC Cup, Intro to Design, the seeded accounts, `info@hanbee.in`, `hanbeetechnology@gmail.com` and the holiday "Founders' Day".
+
+Browser proof: `cd frontend && DEMO_CONTENT=1 npx playwright test tests/e2e/portal/demo-content.spec.ts --workers=1` (screenshots in `test-results/demo/`).

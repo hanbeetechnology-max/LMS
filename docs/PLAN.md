@@ -1197,3 +1197,14 @@ Status and page tables: `docs/MULTI_SCHOOL_PLATFORM.md`.
 - Test fixes: exact selectors after the redesign made headings and chat text appear twice; the manager tasks test now seeds and removes its own task instead of relying on leftovers; old schedule and task tests replaced by the new specs.
 - The older database suites assumed an empty database; they now compare against baselines so the demo data does not break them. No rule problem was found.
 - Verified: database suites 471 checks, 0 failed; browser suite 77 passed, 1 skipped, 0 failed.
+
+## 2026-09-25: Full demo data, cleanup script, demo-content spec
+Added `supabase/tests/seed-demo-full.mjs` (courses, progress, certificate, applications, second tournament, pending school, staff application, second staff, announcements, schedule, tasks, student and staff attendance, chat with unread) and `cleanup-demo.mjs` (dry run, `--rollback-test`, `--yes`, `--include-seeded`). Added `frontend/tests/e2e/portal/demo-content.spec.ts` (DEMO_CONTENT=1). Made 0027 test application counts relative and three browser specs robust to the new tournament and attendance rows. Known frontend defect: tournament pickers default to the earliest (completed) tournament instead of the upcoming one.
+
+
+### 2026-09-25 - Dashboards restyled for school staff, Hanbee staff and manager; demo data for every page (migration 0035)
+
+- Restyled to the student template look; the manager Monitor gained a Recent sign-ins card (one row per person, session shown active only while heartbeats continue; staff and school staff only, never students).
+- Found and fixed while reviewing screenshots: 22 junk draft courses from old test runs buried the LMS overview (deleted after confirming no sections, enrollments or applications); attendance counted days before an account existed as absent (migration 0035); the tournament pickers on the school Teams and Hanbee Tournament pages defaulted to the completed tournament; about 45 old test announcements, 25 test chat messages and 2 test events swamped real content (deleted); the base seed added a duplicate pending invitation every run.
+- Demo data: three extra courses, a completed second tournament, more teams, a second Hanbee staff member, pending school and staff applications (the owner has since verified the school and approved the applicant with the real manager login), announcements, events, holidays, tasks, student and staff attendance history and chat conversations.
+- Verification: database suites 472 checks, 0 failed; browser suite 77 passed, 5 skipped, 0 failed; demo-content spec passes for all four roles (40 pages).

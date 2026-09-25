@@ -19,6 +19,7 @@ await c.query("begin");
 const baseAudit = (await one("select count(*)::int n from audit_log")).n;
 const baseT=(await one("select count(*)::int n from tournaments")).n, baseTT=(await one("select count(*)::int n from tournament_teams")).n, baseTR=(await one("select count(*)::int n from tournament_results")).n, baseO=(await one("select count(*)::int n from organizations")).n;
 const baseAct={}; for (const a of ["create_tournament","decide_team","decide_course_application","enroll_student"]) baseAct[a]=(await one("select count(*)::int n from audit_log where action=$1",[a])).n;
+const baseApp=(await one("select count(*)::int n from applications")).n;
 // --- setup
 const oA=(await signup("owner-a@x.test",schoolMeta("Alpha School"))).uid, oB=(await signup("owner-b@x.test",schoolMeta("Beta School"))).uid, oC=(await signup("owner-c@x.test",schoolMeta("Gamma School"))).uid;
 const orgOf = async u=>(await one("select org_id from organization_members where user_id=$1",[u])).org_id;
@@ -180,7 +181,7 @@ r=await tryq("select decide_course_application($1,'verified',$2)",[app1,section]
 await asUser(staffB); check("school B sees no A applications", await cnt("select count(*)::int n from applications")===0);
 await asUser(a1); check("student sees own application only", await cnt("select count(*)::int n from applications")===1);
 await asUser(b1); check("other student sees none", await cnt("select count(*)::int n from applications")===0);
-await asUser(jamie); check("Hanbee staff sees all applications", await cnt("select count(*)::int n from applications")===2);
+await asUser(jamie); check("Hanbee staff sees all applications", await cnt("select count(*)::int n from applications")===2+baseApp);
 r=await tryq("select decide_course_application($1,'verified',null)",[app1]); check("verify needs a section",!!r.e);
 r=await tryq("select decide_course_application($1,'verified',$2)",[app1,section]); check("Hanbee staff verifies course application",ok(r));
 await asOwner(); check("enrollment created", await cnt("select count(*)::int n from enrollments where student_id=$1 and section_id=$2 and status='active'",[a1,section])===1);
@@ -215,6 +216,6 @@ await asAnon(); r=await tryq("select * from get_leaderboard($1)",[T]); check("an
 await c.query("rollback");
 await asOwner();
 const left=await one("select (select count(*) from tournaments)::int t,(select count(*) from tournament_teams)::int tt,(select count(*) from applications)::int a,(select count(*) from organizations)::int o,(select count(*) from profiles where email like '%@x.test')::int p,(select count(*) from audit_log)::int al");
-check("everything rolled back", left.t===baseT&&left.tt===baseTT&&left.a===0&&left.o===baseO&&left.p===0&&left.al===baseAudit, JSON.stringify(left)+" base="+baseAudit);
+check("everything rolled back", left.t===baseT&&left.tt===baseTT&&left.a===baseApp&&left.o===baseO&&left.p===0&&left.al===baseAudit, JSON.stringify(left)+" base="+baseAudit);
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();

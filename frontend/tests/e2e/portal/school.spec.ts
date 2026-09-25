@@ -80,6 +80,7 @@ test.describe("school staff portal", () => {
   test("teams page lists Alpha Racers", async ({ page }) => {
     await signIn(page, "demo.owner1@hanbee.test");
     await go(page, "Teams", /\/school\/teams$/);
+    await page.getByLabel("Tournament").selectOption({ index: 1 }); // RC Cup (the earlier demo Winter Cup is listed first)
     await expect(page.getByRole("heading", { name: "Alpha Racers" })).toBeVisible();
   });
 
