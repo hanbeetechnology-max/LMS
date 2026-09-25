@@ -9,7 +9,7 @@ const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.
 const one = async (sql,p) => (await c.query(sql,p)).rows[0];
 const baseOrg = (await c.query("select count(*)::int n from organizations")).rows[0].n;
 const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
-  const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
+  const r = await tryq("select test_support_signup($1,$2,$3::jsonb)",[uid,email,JSON.stringify(meta)]);
   if (r.e) throw new Error("signup failed "+email+": "+r.e.message); return uid; };
 const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, school_name:name, registration_no:"REG-"+name, official_email:"office@x.test", guardian_consent:"true"});
 
@@ -66,10 +66,10 @@ await asUser(sA1); r = await tryq("select internal_enrollment_progress()"); chec
 
 // ---- account status
 await asUser(jamie); r = await tryq("select set_account_status($1,'suspended','test')",[sA1]); check("Hanbee staff can suspend a student", !r.e, r.e?.message);
-await asOwner(); r = await one("select p.account_status::text s, u.banned_until is not null b from profiles p join auth.users u on u.id=p.id where p.id=$1",[sA1]); check("suspension bans sign-in", r.s==="suspended" && r.b===true, JSON.stringify(r));
+await asOwner(); r = await one("select p.account_status::text s, test_support_banned(p.id) b from profiles p where p.id=$1",[sA1]); check("suspension bans sign-in", r.s==="suspended" && r.b===true, JSON.stringify(r));
 await asUser(sA1); r = await one("select is_active_account() a, my_org_id() o, (select count(*)::int from lessons) l"); check("a suspended student loses school and course access at once", r.a===false && r.o===null && r.l===0, JSON.stringify(r));
 await asUser(jamie); await c.query("select set_account_status($1,'active')",[sA1]); await asOwner();
-r = await one("select p.account_status::text s, u.banned_until is null b from profiles p join auth.users u on u.id=p.id where p.id=$1",[sA1]); check("reactivation restores the account", r.s==="active" && r.b===true);
+r = await one("select p.account_status::text s, not test_support_banned(p.id) b from profiles p where p.id=$1",[sA1]); check("reactivation restores the account", r.s==="active" && r.b===true);
 await asUser(jamie);
 r = await tryq("select set_account_status($1,'suspended')",[morgan]); check("Hanbee staff cannot suspend the manager", !!r.e);
 r = await tryq("select set_account_status($1,'suspended')",[info]); check("Hanbee staff cannot suspend other Hanbee staff", !!r.e);

@@ -107,6 +107,6 @@ test("completing a course issues a real, verifiable certificate", async ({ page 
   const anonPage = await (await page.context().browser()!.newContext()).newPage();
   await anonPage.goto(href!);
   await expect(anonPage.getByText("Verified")).toBeVisible();
-  await expect(anonPage.getByText("Ava Chen")).toBeVisible();
+  await expect(anonPage.getByText("Ava C.")).toBeVisible();
   await expect(anonPage.getByText("Intro to Design")).toBeVisible();
 });

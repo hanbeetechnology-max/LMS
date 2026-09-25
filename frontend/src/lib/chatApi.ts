@@ -302,7 +302,7 @@ export function joinPresence(
   const emit = () => onSync(online, Array.from(typing.keys()));
 
   const channel: RealtimeChannel = client.channel(`chat-presence:${conversationId}`, {
-    config: { presence: { key: user.userId }, broadcast: { self: false } },
+    config: { private: true, presence: { key: user.userId }, broadcast: { self: false } },
   });
   channel
     .on("presence", { event: "sync" }, () => {

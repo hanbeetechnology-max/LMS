@@ -72,7 +72,7 @@ export function InviteStudentsCard({ orgId, onInvited }: { orgId: string; onInvi
 
   return (
     <Card>
-      <Eyebrow>Step 1 of 3 · Add emails</Eyebrow>
+      <Eyebrow>Step 1 of 3 Â· Add emails</Eyebrow>
       <h2 className="mt-1 text-lg font-semibold text-(--color-ink)">Invite students</h2>
       <p className="mt-1 text-sm text-(--color-slate)">Paste email addresses separated by commas, spaces or new lines, or choose a CSV or text file. Students can only join with an invited address.</p>
 

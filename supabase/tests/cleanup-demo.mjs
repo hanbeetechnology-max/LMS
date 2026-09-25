@@ -53,6 +53,8 @@ const one = async (sql, p = []) => (await db.query(sql, p)).rows[0];
 
 try {
   await db.query("begin");
+  // The audit log is append-only; the database owner may clear demo rows only when saying so explicitly.
+  await db.query("select set_config('app.audit_maintenance', 'true', true)");
   await db.query("set local statement_timeout = '120s'");
   const before = await countAll();
   const hadFounders = !!(await one("select 1 x from public.holidays where name=$1", ["Founders' Day"]));

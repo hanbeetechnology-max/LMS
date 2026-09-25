@@ -50,7 +50,7 @@ await asAnon(); check("anonymous reads no lessons", (await one("select count(*):
 // 0021 profiles: another student's row is hidden
 await asOwner();
 const other = (await one("select gen_random_uuid() u")).u;
-await c.query("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','reg-solo@x.test',$2::jsonb,now(),now())",[other,JSON.stringify({role:"staff"})]);
+await c.query("select test_support_signup($1,'reg-solo@x.test',$2::jsonb)",[other,JSON.stringify({role:"staff"})]);
 await c.query("update profiles set role='student', approved=true where id=$1",[other]);
 await asUser(ava); check("a student cannot read another student's profile", (await one("select count(*)::int n from profiles where id=$1",[other])).n===0);
 await c.query("rollback");

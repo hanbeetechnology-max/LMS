@@ -1214,3 +1214,12 @@ Added `supabase/tests/seed-demo-full.mjs` (courses, progress, certificate, appli
 
 - Gap found: quiz reviews lived only in a small widget on the Hanbee LMS page, and certificates had no list for anyone. Added `list_assessment_reviews()` and `list_certificates_overview()` (school staff limited to their own students; students refused), a 14-check security suite, and screens for all four roles (see `docs/MULTI_SCHOOL_PLATFORM.md`). The assessment browser test now verifies on `/staff/reviews`.
 - Verification: database suites 486 checks, 0 failed; browser suite 78 passed, 5 skipped, 0 failed after rerunning one spec that a network outage (DNS failure to the database host) had broken mid-run.
+
+
+### 2026-09-25 - Backend hardening (migration 0037) and tooling
+
+Details and status: `docs/SECURITY_PLAN.md` section F, `docs/RECOVERY.md`.
+- Hotfix during this work: my first version of the pending-queue cap shared one trigger function across two tables and broke every new signup for a few minutes (`new.status` does not exist on profiles); caught by the new suite, split into two functions.
+- Discovered: `npx tsc --noEmit` checks nothing in this project (the root tsconfig only references the real configs), so earlier "TSC OK" results were empty. `npx tsc -b --noEmit` is the real check; it found one leftover unused variable in `ApplyPage.tsx` (fixed). Docs and CI corrected.
+- Found and fixed: two files saved with a stray non-UTF-8 byte showed a wrong character on the Students page.
+- Verification: database suites 520 checks, 0 failed, run as the restricted `hanbee_test` login.

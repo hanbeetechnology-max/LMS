@@ -32,7 +32,7 @@ type FieldName = "fullName" | "email";
 
 export function ApplyPage() {
   const [availableCourses, setAvailableCourses] = useState<CourseTeaser[]>(MOCK_AVAILABLE_COURSES);
-  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [, setLoadingCourses] = useState(true);
   const [courseId, setCourseId] = useState(MOCK_AVAILABLE_COURSES[0].id);
   const [form, setForm] = useState<FormState>({ fullName: "", email: "", phone: "", message: "" });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});

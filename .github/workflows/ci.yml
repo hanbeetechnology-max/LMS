@@ -22,7 +22,9 @@ jobs:
 
       - name: Type-check
         working-directory: frontend
-        run: npx tsc --noEmit
+        # -b is required: the root tsconfig only references the app and node configs,
+        # so a plain `tsc --noEmit` would check nothing.
+        run: npx tsc -b --noEmit
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -47,3 +49,27 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
         run: npx playwright test
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Fails the build if a password, API key or token is committed.
+      - name: Scan for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Known-vulnerable packages that ship to users (fails on high or critical).
+      - name: Audit production dependencies
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high

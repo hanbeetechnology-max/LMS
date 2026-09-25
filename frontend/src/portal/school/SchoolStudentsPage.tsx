@@ -8,6 +8,7 @@ import { InviteStudentsCard } from "./InviteStudentsCard";
 import { MailStep } from "./MailStep";
 import { ProgressBar } from "./ProgressBar";
 import { TeachersCard } from "./TeachersCard";
+import { JoinLinkCard } from "./JoinLinkCard";
 
 export function SchoolStudentsPage() {
   const { profile } = useAuth();
@@ -127,6 +128,7 @@ export function SchoolStudentsPage() {
       </section>
 
       <div className="space-y-6">
+        <JoinLinkCard orgId={orgId} isOwner={isOwner} />
         <InviteStudentsCard orgId={orgId} onInvited={openMailStep} />
         {mailEmails.length > 0 && (
           <div ref={mailRef}>
