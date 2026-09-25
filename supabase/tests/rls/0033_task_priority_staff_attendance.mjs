@@ -86,6 +86,18 @@ await asOwner();
 await c.query("update staff_work_settings set work_days='{1,2,3,4,5,6,7}'");
 await asUser(info);
 r = await one("select status from staff_attendance(null, current_date, current_date)"); check("a normal working day past the start time is still late", r.status==="late", JSON.stringify(r));
+
+// ---- days before the account existed are not absences (migration 0035)
+await asOwner();
+await c.query("update staff_work_settings set start_time='09:30', grace_minutes=15, work_days='{1,2,3,4,5,6,7}'");
+await c.query("delete from staff_time_entries where staff_id=$1",[info]);
+await c.query("delete from holidays where holiday_date between current_date-6 and current_date");
+const created = (await one("select created_at::date d from profiles where id=$1",[info])).d;
+await c.query("update profiles set created_at = (current_date - 3)::timestamp where id=$1",[info]);
+await asUser(info);
+rows = (await c.query("select work_date::text d, status from staff_attendance(null, current_date-6, current_date-1)")).rows;
+check("days before the account existed are off, not absent", rows.filter(x=>x.status==="absent").length===3 && rows.filter(x=>x.status==="off").length===3, JSON.stringify(rows.map(x=>x.status)));
+await asOwner(); await c.query("update profiles set created_at=$2 where id=$1",[info, created]);
 await c.query("rollback");
 await asOwner();
 const s = await one("select start_time::text st, grace_minutes g from staff_work_settings"); check("all changes rolled back (settings unchanged)", s.st==="09:30:00" && s.g===15, JSON.stringify(s));

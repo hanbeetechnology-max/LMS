@@ -91,7 +91,7 @@ export function AttendanceView({ staffId }: { staffId: string | null }) {
           <Card className="mt-4">
             <p className="text-xs font-medium uppercase tracking-[0.08em] text-(--color-mist)">Month at a glance</p>
             <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Days of the month">
-              {data.map((d) => (
+              {[...data].reverse().map((d) => (
                 <li key={d.workDate} title={`${weekday(d.workDate)}: ${d.status}`} className={`flex size-8 items-center justify-center rounded-md text-xs font-medium ${CELL[d.status]}`}>
                   <span aria-hidden="true">{Number(d.workDate.slice(8))}</span>
                   <span className="sr-only">{weekday(d.workDate)}, {d.status}</span>
