@@ -105,6 +105,11 @@ test.describe("school staff portal", () => {
     await expect(page.getByRole("heading", { name: "Demo Public School" })).toBeVisible();
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(await overflow()).toBe(false);
+    for (const path of ["students", "teams", "courses"]) {
+      await page.goto(`/school/${path}`);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      expect(await overflow()).toBe(false);
+    }
   });
 
   test("a student cannot open the school overview", async ({ page }) => {
