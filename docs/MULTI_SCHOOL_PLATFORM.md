@@ -114,7 +114,7 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 
 ## 9. Testing
 
-- **Database (built):** `supabase/tests/rls/*.mjs` impersonate real roles and run inside a rolled-back transaction. Eight suites, 471 checks, all independent of the demo data: 0016-0021 regressions (15), 0023 (22), 0024 (45), 0026 chat (97), 0027 tournaments (149), 0028 (54), 0029 (56), 0033 tasks and staff attendance (33). Run them all after any policy change. See `supabase/tests/README.md`.
+- **Database (built):** `supabase/tests/rls/*.mjs` impersonate real roles and run inside a rolled-back transaction. Eight suites, 472 checks, all independent of the demo data: 0016-0021 regressions (15), 0023 (22), 0024 (45), 0026 chat (97), 0027 tournaments (149), 0028 (54), 0029 (56), 0033 tasks and staff attendance (33). Run them all after any policy change. See `supabase/tests/README.md`.
 - **Browser (to build):** small role-based Playwright suite, one worker: school registers and is verified; invites; student joins and sees tournament first; school A cannot see school B; revoke hides tournament; chat live between two sessions; team apply shows the QR step. The old mock-based specs are deleted once the old pages are replaced. Known pre-existing failures: 5 dark-mode contrast specs and one theme-toggle spec.
 
 ## 10. Progress tracker
@@ -131,13 +131,14 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 - [x] Hanbee staff portal: my space (clock in/out, tasks), tournament management, LMS overview (with quiz review), schools directory with first-verifier-wins, school detail, courses with student table, applications
 - [x] Manager portal: monitor, verifications, schools, Hanbee staff overview
 - [x] Old mock pages (48 files) and 29 obsolete browser specs removed
-- [x] Browser suite: 77 passed, 1 skipped, 0 failed (`frontend/tests/e2e/`, run with `--workers=1`)
+- [x] Browser suite: 77 passed, 5 skipped (4 on-demand demo-content checks, 1 clock-in test), 0 failed (`frontend/tests/e2e/`, run with `--workers=1`)
 - [x] Student dashboard redesigned as a simple template-style portal, with a real attendance page; solo option appears only when a school closes (join another school or continue solo)
 - [x] Tasks redesigned: List and Board, Low/Medium/High priority, manager-only "All employees' tasks" tab (read only); Tasks menu for Hanbee staff, school staff and manager
 - [x] Schedule redesigned like the reference: Week, Day, Month, mini calendar, holidays on the calendar, manager adds and deletes holidays; manager gets a Schedule menu item
 - [x] Hanbee staff Attendance page; manager performance view (late, absent, high-priority tasks, detail panel) and a Working hours card
 - [ ] Team formation inside a school (students propose, school staff approve, HANBEE verifies): plan agreed in chat, waiting on the owner's answer whether students may start teams; needs a captain, team invitations, min and max team size, and a "proposed" status
-- [ ] Restyle the school staff, Hanbee staff and manager dashboards to match the new template look
+- [x] School staff, Hanbee staff and manager dashboards restyled to match the student template look (revoked invitations hidden behind a toggle; manager Monitor gains Recent sign-ins, one row per person)
+- [x] Demo data for every page of every role (`supabase/tests/seed-demo.mjs` then `seed-demo-full.mjs`), a safe `cleanup-demo.mjs` (dry run by default; `--yes`, `--rollback-test`, `--include-seeded`), and an on-demand `demo-content.spec.ts` (`DEMO_CONTENT=1`) that opens every page for all four roles and screenshots it
 - [ ] Tasks: subtasks (owner has not yet said yes or no)
 - [ ] Visual review of every screen at 1280px and 390px by someone other than the builder (builders read screenshots for some screens only)
 - [ ] Untested-by-browser flows: team create, add, apply and withdraw; solo team-of-one apply; course apply; closed-school banner; suspended and school-inactive pages

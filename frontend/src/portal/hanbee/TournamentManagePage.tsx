@@ -240,7 +240,7 @@ export function TournamentManagePage() {
 
   const tournaments = list.data ?? [];
   useEffect(() => {
-    if (!selectedId && tournaments.length > 0) setSelectedId(tournaments[0].id);
+    if (!selectedId && tournaments.length > 0) setSelectedId((tournaments.find((t) => t.status !== "completed") ?? tournaments[0]).id);
   }, [selectedId, tournaments]);
   const selected = tournaments.find((t) => t.id === selectedId) ?? null;
 

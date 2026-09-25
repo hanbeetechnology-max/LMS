@@ -39,7 +39,7 @@ export function SchoolTeamsPage() {
   const [tournamentId, setTournamentId] = useState("");
 
   useEffect(() => {
-    if (!tournamentId && tournaments.data && tournaments.data.length > 0) setTournamentId(tournaments.data[0].id);
+    if (!tournamentId && tournaments.data && tournaments.data.length > 0) setTournamentId((tournaments.data.find((t) => t.status !== "completed") ?? tournaments.data[0]).id);
   }, [tournaments.data, tournamentId]);
 
   const teams = useAsync(() => (tournamentId ? fetchSchoolTeams(tournamentId) : Promise.resolve([] as Team[])), [tournamentId]);

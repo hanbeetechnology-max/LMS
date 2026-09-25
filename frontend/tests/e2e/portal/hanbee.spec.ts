@@ -82,6 +82,7 @@ test.describe("Hanbee staff portal", () => {
   test("tournament page shows the RC Cup with verified and awaiting teams", async ({ page }) => {
     await loginStaff(page);
     await page.goto("/staff/tournament");
+    await page.getByText("Hanbee RC Cup 2026").first().click();
     await expect(page.getByText("Hanbee RC Cup 2026").first()).toBeVisible();
     await expect(page.getByRole("row", { name: /Alpha Racers/ }).first()).toContainText("verified");
     await expect(page.getByRole("row", { name: /Sample Speed/ })).toContainText(/payment declared|applied|verified/);

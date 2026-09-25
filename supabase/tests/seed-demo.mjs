@@ -85,9 +85,13 @@ const beta = await ensureSchool({
 // A solo student (Hanbee staff invite with no school).
 {
   const email = "demo.solo@hanbee.test";
-  const made = await api("/rest/v1/invitations", { method: "POST", token: jamie, prefer: "return=representation", body: { email, role: "student" } });
-  const tok = made.json?.[0]?.token;
-  if (tok) await signup(email, { invite_token: tok, full_name: "Sana Khan" });
+  // Only invite when the account does not exist yet, so reruns add nothing.
+  const exists = ((await select(`profiles?email=eq.${encodeURIComponent(email)}&select=id`, jamie)).json ?? []).length > 0;
+  if (!exists) {
+    const made = await api("/rest/v1/invitations", { method: "POST", token: jamie, prefer: "return=representation", body: { email, role: "student" } });
+    const tok = made.json?.[0]?.token;
+    if (tok) await signup(email, { invite_token: tok, full_name: "Sana Khan" });
+  }
   say("solo student ready");
 }
 
