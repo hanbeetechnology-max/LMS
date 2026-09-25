@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ScanToPayCard } from "../../components/ui/ScanToPayCard";
 import { fetchPublishedCourses } from "../../lib/coursesApi";
@@ -7,6 +7,7 @@ import { useToast } from "../../lib/ToastProvider";
 import { applyForCourse, fetchCourseApplications } from "../../lib/tournamentPortalApi";
 import { Card, EmptyState, ErrorBlock, LoadingBlock, PageHeader, StatusBadge, formatDate, useAsync } from "../kit";
 import { ProgressBar } from "./LmsOverviewPage";
+import { primaryBtn, secondaryBtn } from "./shared";
 
 export function LmsCoursesPage() {
   const { showToast } = useToast();
@@ -43,14 +44,14 @@ export function LmsCoursesPage() {
     <>
       <PageHeader title="My courses" subtitle="Courses you are in and courses you can apply for." />
 
-      <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Enrolled</h2>
+      <h2 className="mb-3 text-base font-semibold text-(--color-ink)">Enrolled</h2>
       {data.mine.length === 0 ? (
         <EmptyState title="You are not enrolled in a course yet." body="HANBEE will add you, or you can apply below." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {data.mine.map((c) => (
             <Card key={c.enrollmentId}>
-              <h3 className="font-display text-lg font-semibold text-(--color-ink)">{c.courseTitle}</h3>
+              <h3 className="text-base font-semibold text-(--color-ink)">{c.courseTitle}</h3>
               <p className="text-sm text-(--color-slate)">Section: {c.sectionName}</p>
               <div className="mt-3">
                 <ProgressBar pct={c.completionPct} />
@@ -58,7 +59,7 @@ export function LmsCoursesPage() {
               <p className="mt-2 text-xs text-(--color-mist)">
                 {c.completed} of {c.total} completed ({Math.round(c.completionPct)}%)
               </p>
-              <Link to={`/student/courses/${c.courseId}/lessons/l1`} className="mt-3 inline-block text-sm font-medium text-(--color-violet) underline">
+              <Link to={`/student/courses/${c.courseId}/lessons/l1`} className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-(--color-accent) hover:underline">
                 Open course
               </Link>
             </Card>
@@ -66,7 +67,7 @@ export function LmsCoursesPage() {
         </div>
       )}
 
-      <h2 className="mb-3 mt-8 font-display text-lg font-semibold text-(--color-ink)">Courses you can apply for</h2>
+      <h2 className="mb-3 mt-8 text-base font-semibold text-(--color-ink)">Courses you can apply for</h2>
       {available.length === 0 ? (
         <EmptyState title="No other courses right now" body="New courses will show up here when HANBEE publishes them." />
       ) : (
@@ -76,7 +77,7 @@ export function LmsCoursesPage() {
             const open = openId === c.id;
             return (
               <Card key={c.id}>
-                <h3 className="font-display text-lg font-semibold text-(--color-ink)">{c.title}</h3>
+                <h3 className="text-base font-semibold text-(--color-ink)">{c.title}</h3>
                 <p className="mt-1 line-clamp-3 text-sm text-(--color-slate)">{c.description}</p>
                 {applied ? (
                   <p className="mt-3 text-sm font-medium text-(--color-amber-deep)">Applied, waiting for HANBEE</p>
@@ -89,11 +90,11 @@ export function LmsCoursesPage() {
                         type="button"
                         disabled={busy}
                         onClick={() => void apply(c.id)}
-                        className="min-h-11 rounded-full bg-(--color-ink) px-5 text-sm font-semibold text-(--color-paper) disabled:opacity-60"
+                        className={primaryBtn}
                       >
                         {busy ? "Sending..." : "Send application"}
                       </button>
-                      <button type="button" onClick={() => setOpenId(null)} className="min-h-11 rounded-full px-4 text-sm font-medium text-(--color-slate)">
+                      <button type="button" onClick={() => setOpenId(null)} className="min-h-11 rounded-lg px-4 text-sm font-medium text-(--color-slate)">
                         Cancel
                       </button>
                     </div>
@@ -105,7 +106,7 @@ export function LmsCoursesPage() {
                       setOpenId(c.id);
                       setDeclared(false);
                     }}
-                    className="mt-3 min-h-11 rounded-full border border-(--color-line) px-5 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud)"
+                    className={`mt-3 ${secondaryBtn}`}
                   >
                     Apply
                   </button>
@@ -118,7 +119,7 @@ export function LmsCoursesPage() {
 
       {data.applications.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 font-display text-lg font-semibold text-(--color-ink)">Your applications</h2>
+          <h2 className="mb-3 mt-8 text-base font-semibold text-(--color-ink)">Your applications</h2>
           <Card>
             <ul className="divide-y divide-(--color-line)">
               {data.applications.map((a) => (

@@ -1,4 +1,4 @@
-import { lazy } from "react";
+﻿import { lazy } from "react";
 import { Navigate, type RouteObject } from "react-router-dom";
 import { ProtectedRoute } from "../../routes/ProtectedRoute";
 import { StudentPortalLayout } from "./StudentPortalLayout";
@@ -17,7 +17,7 @@ const ChatPage = page(() => import("../chat/ChatPage"), "ChatPage");
 // Existing, still-used learning screens.
 const StudentLessonViewerPage = page(() => import("../../pages/student/StudentLessonViewerPage"), "StudentLessonViewerPage");
 const StudentCertificatePage = page(() => import("../../pages/student/StudentCertificatePage"), "StudentCertificatePage");
-const StudentAttendancePage = page(() => import("../../pages/student/StudentAttendancePage"), "StudentAttendancePage");
+const AttendancePage = page(() => import("./AttendancePage"), "AttendancePage");
 const StudentAiPage = page(() => import("../../pages/student/StudentAiPage"), "StudentAiPage");
 
 /** Student portal: the tournament side (/student/rc) comes first, the learning
@@ -36,7 +36,7 @@ export const studentRoutes: RouteObject = {
     { path: "rc/team", element: <RcTeamPage /> },
     { path: "lms", element: <LmsOverviewPage /> },
     { path: "lms/courses", element: <LmsCoursesPage /> },
-    { path: "lms/attendance", element: <StudentAttendancePage /> },
+    { path: "lms/attendance", element: <AttendancePage /> },
     { path: "lms/ai", element: <StudentAiPage /> },
     { path: "courses/:id/lessons/:lessonId", element: <StudentLessonViewerPage /> },
     { path: "courses/:id/certificate", element: <StudentCertificatePage /> },

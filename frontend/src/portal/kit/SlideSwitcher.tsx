@@ -10,7 +10,7 @@ export interface SlideTab {
  *  the student wizard (Tournament | Learning) and the school overview tabs. */
 export function SlideSwitcher({ tabs, value, onChange, label }: { tabs: SlideTab[]; value: string; onChange: (id: string) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="relative inline-flex rounded-full border border-(--color-line) bg-(--color-cloud) p-1">
+    <div role="tablist" aria-label={label} className="relative inline-flex rounded-full border border-(--color-line) bg-(--color-card) p-1">
       {tabs.map((tab) => {
         const active = tab.id === value;
         return (

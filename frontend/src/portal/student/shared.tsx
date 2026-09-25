@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../lib/AuthProvider";
-import { Card, EmptyState, ErrorBlock, LoadingBlock, relativeTime, useAsync } from "../kit";
+import { Card, EmptyState, ErrorBlock, Eyebrow, LoadingBlock, relativeTime, useAsync } from "../kit";
+
+/** Primary (blue accent) button classes, shared by the student pages. */
+export const primaryBtn = "inline-flex min-h-11 items-center justify-center rounded-lg bg-(--color-accent) px-5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60";
+export const secondaryBtn = "inline-flex min-h-11 items-center justify-center rounded-lg border border-(--color-line) bg-(--color-card) px-5 text-sm font-semibold text-(--color-ink) hover:bg-(--color-canvas) disabled:opacity-60";
+export const textLink = "inline-flex min-h-11 items-center text-sm font-medium text-(--color-accent) hover:underline";
 
 /** Ticks once a second and returns the time left until `iso`. */
 export function useCountdown(iso: string | undefined) {
@@ -32,37 +37,44 @@ interface AnnouncementRow {
   created_at: string;
 }
 
-async function loadLatest(): Promise<AnnouncementRow[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
+async function loadLatest(): Promise<{ rows: AnnouncementRow[]; total: number }> {
+  if (!supabase) return { rows: [], total: 0 };
+  const { data, error, count } = await supabase
     .from("announcements")
-    .select("id, title, body, created_at")
+    .select("id, title, body, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
     .limit(3);
   if (error) throw error;
-  return (data ?? []) as AnnouncementRow[];
+  const rows = (data ?? []) as AnnouncementRow[];
+  return { rows, total: count ?? rows.length };
+}
+
+/** Total number of announcements the student can see (for a stat card). */
+export function useAnnouncementCount() {
+  const { data } = useAsync(loadLatest, []);
+  return data ? data.total : null;
 }
 
 export function LatestAnnouncements() {
   const { data, loading, error, reload } = useAsync(loadLatest, []);
   return (
     <Card>
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-(--color-ink)">Latest announcements</h2>
-        <Link to="/student/announcements" className="text-sm font-medium text-(--color-violet) underline">
+      <div className="flex items-center justify-between gap-2">
+        <Eyebrow>Latest announcements</Eyebrow>
+        <Link to="/student/announcements" className={textLink}>
           See all
         </Link>
       </div>
-      <div className="mt-3">
+      <div className="mt-2">
         {loading && !data ? (
           <LoadingBlock />
         ) : error ? (
           <ErrorBlock onRetry={reload} />
-        ) : !data || data.length === 0 ? (
+        ) : !data || data.rows.length === 0 ? (
           <EmptyState title="No announcements yet" />
         ) : (
           <ul className="divide-y divide-(--color-line)">
-            {data.map((a) => (
+            {data.rows.map((a) => (
               <li key={a.id} className="py-3">
                 <p className="font-medium text-(--color-ink)">{a.title}</p>
                 <p className="mt-0.5 line-clamp-2 text-sm text-(--color-slate)">{a.body}</p>

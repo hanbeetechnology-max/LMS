@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { fetchLeaderboard, fetchMyTeams, fetchTournaments } from "../../lib/tournamentPortalApi";
 import { Badge, DataTable, EmptyState, ErrorBlock, LoadingBlock, PageHeader, useAsync } from "../kit";
 import { useSchoolGone } from "./shared";
@@ -36,7 +36,7 @@ export function RcLeaderboardPage() {
                 id="lb-tournament"
                 value={tournamentId ?? ""}
                 onChange={(e) => setPicked(e.target.value)}
-                className="min-h-11 rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink)"
+                className="min-h-11 rounded-lg border border-(--color-line) bg-(--color-card) px-3 text-sm text-(--color-ink)"
               >
                 {tournaments.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -56,7 +56,7 @@ export function RcLeaderboardPage() {
               rowKey={(r) => r.teamId}
               emptyTitle="Results will appear after the event"
               columns={[
-                { key: "rank", header: "Rank", render: (r) => <span className="font-mono">#{r.rank}</span>, sortValue: (r) => r.rank },
+                { key: "rank", header: "Rank", render: (r) => <span className="tabular-nums">#{r.rank}</span>, sortValue: (r) => r.rank },
                 {
                   key: "team",
                   header: "Team",
@@ -67,8 +67,8 @@ export function RcLeaderboardPage() {
                     </span>
                   ),
                 },
-                { key: "school", header: "School", render: (r) => r.schoolName ?? "Solo entry" },
-                { key: "points", header: "Points", render: (r) => <span className="font-mono">{r.points}</span>, sortValue: (r) => r.points },
+                { key: "school", header: "School", render: (r) => r.schoolName ?? "Individual entry" },
+                { key: "points", header: "Points", render: (r) => <span className="tabular-nums">{r.points}</span>, sortValue: (r) => r.points },
               ]}
             />
           )}
