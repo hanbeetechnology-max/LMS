@@ -1,0 +1,64 @@
+import { connect } from "./_db.mjs";
+// Lesson reviews and certificates overview (migration 0036): who may list what.
+const c = await connect();
+const id = async e => (await c.query("select id from profiles where email=$1",[e])).rows[0].id;
+const jamie=await id("jamie@hanbeelms.edu"), morgan=await id("morgan@hanbeelms.edu");
+let pass=0, fail=0; const check=(n,ok,x="")=>{(ok?pass++:fail++);console.log(ok?"PASS":"FAIL",n,x)};
+const asUser = async (u) => { await c.query("reset role"); await c.query("set local role authenticated"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:u,role:"authenticated"})]); };
+const asAnon = async () => { await c.query("reset role"); await c.query("set local role anon"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({role:"anon"})]); };
+const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
+const tryq = async (sql,p)=>{ await c.query("savepoint s"); try{const r=await c.query(sql,p); await c.query("release savepoint s"); return {r};}catch(e){await c.query("rollback to savepoint s"); return {e};} };
+const one = async (sql,p) => (await c.query(sql,p)).rows[0];
+const signup = async (email, meta) => { await asOwner(); const uid = (await one("select gen_random_uuid() u")).u;
+  const r = await tryq("insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at) values ($1,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',$2,$3::jsonb,now(),now())",[uid,email,JSON.stringify(meta)]);
+  if (r.e) throw new Error("signup failed "+email+": "+r.e.message); return uid; };
+const schoolMeta = (name) => ({role:"school_staff", full_name:"Owner "+name, school_name:name, registration_no:"REG-"+name, official_email:"office@x.test", guardian_consent:"true"});
+
+await c.query("begin");
+const ownerA = await signup("ownerA36@x.test", schoolMeta("Alpha36")), ownerB = await signup("ownerB36@x.test", schoolMeta("Beta36"));
+const orgOf = async u => (await one("select org_id from organization_members where user_id=$1",[u])).org_id;
+const orgA = await orgOf(ownerA), orgB = await orgOf(ownerB);
+await asUser(jamie); await c.query("select verify_school($1)",[orgA]); await c.query("select verify_school($1)",[orgB]);
+await asUser(ownerA); await c.query("select * from invite_students($1, array['sa36@x.test'])",[orgA]);
+await asUser(ownerB); await c.query("select * from invite_students($1, array['sb36@x.test'])",[orgB]);
+await asOwner(); const tokA = (await one("select join_token t from organizations where id=$1",[orgA])).t, tokB = (await one("select join_token t from organizations where id=$1",[orgB])).t;
+const sA = await signup("sa36@x.test",{join_token:tokA, full_name:"Student A36"}), sB = await signup("sb36@x.test",{join_token:tokB, full_name:"Student B36"});
+await asOwner();
+const course = (await one("insert into courses (title,status,owner_id) values ('T36 Course','published',$1) returning id",[jamie])).id;
+const mod = (await one("insert into modules (course_id,title,sort_order) values ($1,'M',0) returning id",[course])).id;
+const lesson = (await one("insert into lessons (module_id,title,published,sort_order) values ($1,'T36 Lesson',true,0) returning id",[mod])).id;
+const section = (await one("insert into sections (course_id,name,start_date,end_date) values ($1,'S',current_date,current_date+30) returning id",[course])).id;
+const asmt = (await one("insert into assessments (lesson_id,title,created_by) values ($1,'T36 check',$2) returning id",[lesson,jamie])).id;
+for (const [stu, sc] of [[sA, 80],[sB, 40]]) {
+  const enr = (await one("insert into enrollments (section_id, student_id, status) values ($1,$2,'active') returning id",[section,stu])).id;
+  await c.query("insert into assessment_submissions (assessment_id, enrollment_id, answers, score, passed) values ($1,$2,'{}'::jsonb,$3,$4)",[asmt,enr,sc,sc>=60]);
+  await c.query("insert into certificates (user_id, course_title, serial) values ($1,'T36 Course',$2)",[stu,"T36-"+stu.slice(0,8)]);
+}
+const mine = async (fn, filter) => (await c.query(`select * from ${fn}() where ${filter}`)).rows;
+
+await asUser(jamie);
+let rv = await mine("list_assessment_reviews","course_title='T36 Course'"), ce = await mine("list_certificates_overview","course_title='T36 Course'");
+check("Hanbee staff see both students' reviews", rv.length===2, `n=${rv.length}`);
+check("Hanbee staff see both certificates", ce.length===2);
+check("a review shows student, school, lesson, score and waiting state", rv.some(x=>x.student_name==="Student A36" && x.school_name==="Alpha36" && x.lesson_title==="T36 Lesson" && Number(x.score)===80 && x.status==="pending" && x.unlocked===false), JSON.stringify(rv[0]));
+check("a certificate shows student, school, course and serial", ce.some(x=>x.student_name==="Student B36" && x.school_name==="Beta36" && /^T36-/.test(x.serial)));
+await asUser(morgan); rv = await mine("list_assessment_reviews","course_title='T36 Course'");
+check("the manager sees every review", rv.length===2);
+await asUser(ownerA); rv = await mine("list_assessment_reviews","course_title='T36 Course'"); ce = await mine("list_certificates_overview","course_title='T36 Course'");
+check("school A staff see only their own student's review", rv.length===1 && rv[0].student_name==="Student A36");
+check("school A staff see only their own student's certificate", ce.length===1 && ce[0].student_name==="Student A36");
+await asUser(ownerB); rv = await mine("list_assessment_reviews","course_title='T36 Course'"); ce = await mine("list_certificates_overview","course_title='T36 Course'");
+check("school B staff see only theirs", rv.length===1 && rv[0].student_name==="Student B36" && ce.length===1 && ce[0].student_name==="Student B36");
+await asUser(sA);
+let r = await tryq("select * from list_assessment_reviews()"); check("a student cannot list reviews", !!r.e);
+r = await tryq("select * from list_certificates_overview()"); check("a student cannot list all certificates", !!r.e);
+await asAnon(); r = await tryq("select * from list_assessment_reviews()"); check("anonymous cannot list reviews", !!r.e);
+r = await tryq("select * from list_certificates_overview()"); check("anonymous cannot list certificates", !!r.e);
+await asOwner();
+await c.query("update assessment_submissions set auto_unlock_at = now() - interval '1 minute' where assessment_id=$1",[asmt]);
+await asUser(jamie); rv = await mine("list_assessment_reviews","course_title='T36 Course'");
+check("a review past its 10-minute limit shows as unlocked", rv.every(x=>x.unlocked===true));
+await c.query("rollback"); await asOwner();
+check("all test rows rolled back", (await one("select count(*)::int n from courses where title='T36 Course'")).n===0 && (await one("select count(*)::int n from certificates where course_title='T36 Course'")).n===0);
+console.log(`${pass} passed, ${fail} failed`);
+await c.end();
