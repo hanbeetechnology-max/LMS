@@ -13,8 +13,18 @@ test.describe("manager portal", () => {
     await signIn(page, "morgan@hanbeelms.edu", "manager123");
     await expect(page).toHaveURL(/\/manager\/monitor$/);
     await expect(page.getByText("Needs your attention")).toBeVisible();
-    await expect(page.getByText("Active schools")).toBeVisible();
+    await expect(page.getByText("Schools active", { exact: true })).toBeVisible();
+    await expect(page.getByText("Tournament participants", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Recent activity" })).toBeVisible();
+
+    // recent sign-ins: staff only, never students
+    const signIns = page.getByLabel("Recent sign-ins");
+    await expect(page.getByText("Recent sign-ins", { exact: true })).toBeVisible();
+    await expect(page.getByText("Sign-ins could not be loaded")).toHaveCount(0);
+    await expect(signIns.getByText(/student/i)).toHaveCount(0);
+    await expect(signIns.getByText(/Ava/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Tournament participation by school" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: /Participants/ }).first()).toBeVisible();
 
     for (const label of ["Monitor", "Verifications", "Schools", "Hanbee staff", "Announcements", "Tasks", "Chat"]) {
       const link = page.getByRole("link", { name: label, exact: true }).first();
@@ -44,6 +54,13 @@ test.describe("manager portal", () => {
     await page.goto("/manager/verifications");
     await expect(page.getByRole("heading", { name: "Schools waiting for verification" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Hanbee staff applications" })).toBeVisible();
+    const verify = page.getByRole("button", { name: "Verify", exact: true }).first();
+    if (await verify.count()) {
+      await verify.click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
   });
 
   test("hanbee staff and students cannot open the manager monitor", async ({ page }) => {
