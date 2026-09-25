@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useToast } from "../../lib/ToastProvider";
 import { inviteStudents, type InviteOutcome, type InviteResult } from "../../lib/portalApi";
-import { Badge, Card, DataTable, type BadgeTone } from "../kit";
+import { Badge, Card, Eyebrow, DataTable, type BadgeTone } from "../kit";
 
 const EMAIL_RE = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 
@@ -72,7 +72,8 @@ export function InviteStudentsCard({ orgId, onInvited }: { orgId: string; onInvi
 
   return (
     <Card>
-      <h2 className="font-display text-lg font-semibold text-(--color-ink)">Invite students</h2>
+      <Eyebrow>Step 1 of 3 · Add emails</Eyebrow>
+      <h2 className="mt-1 text-lg font-semibold text-(--color-ink)">Invite students</h2>
       <p className="mt-1 text-sm text-(--color-slate)">Paste email addresses separated by commas, spaces or new lines, or choose a CSV or text file. Students can only join with an invited address.</p>
 
       <label htmlFor="invite-emails" className="mt-4 block text-sm font-medium text-(--color-ink)">Student emails</label>
@@ -82,11 +83,11 @@ export function InviteStudentsCard({ orgId, onInvited }: { orgId: string; onInvi
         onChange={(e) => setText(e.target.value)}
         rows={5}
         placeholder="student1@example.com, student2@example.com"
-        className="mt-1 w-full rounded-xl border border-(--color-line) bg-(--color-paper) p-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-violet)"
+        className="mt-1 w-full rounded-xl border border-(--color-line) bg-(--color-paper) p-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-accent)"
       />
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) focus-within:outline-2 focus-within:outline-(--color-violet)">
+        <label className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud) focus-within:outline-2 focus-within:outline-(--color-accent)">
           Choose CSV or text file
           <input ref={fileRef} type="file" accept=".csv,.txt,text/csv,text/plain" className="sr-only" onChange={(e) => onFile(e.target.files?.[0])} />
         </label>
@@ -103,7 +104,7 @@ export function InviteStudentsCard({ orgId, onInvited }: { orgId: string; onInvi
         type="button"
         onClick={send}
         disabled={busy || parsed.valid.length === 0}
-        className="mt-4 inline-flex min-h-11 items-center rounded-full bg-(--color-ink) px-6 text-sm font-semibold text-(--color-paper) disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)"
+        className="mt-4 inline-flex min-h-11 items-center rounded-full bg-(--color-accent) px-6 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)"
       >
         {busy ? "Sending..." : `Send ${parsed.valid.length || ""} invitation${parsed.valid.length === 1 ? "" : "s"}`}
       </button>

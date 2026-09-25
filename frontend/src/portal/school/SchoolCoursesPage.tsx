@@ -32,7 +32,7 @@ export function SchoolCoursesPage() {
               header: "Course",
               sortValue: (r) => r.title,
               render: (r) => (
-                <button type="button" onClick={() => setSelected({ id: r.courseId, title: r.title })} className="min-h-11 text-left font-medium text-(--color-violet) underline-offset-2 hover:underline">
+                <button type="button" onClick={() => setSelected({ id: r.courseId, title: r.title })} className="min-h-11 text-left font-medium text-(--color-accent) underline-offset-2 hover:underline">
                   {r.title}
                 </button>
               ),
@@ -45,7 +45,7 @@ export function SchoolCoursesPage() {
 
       {selected && (
         <section className="mt-8" aria-label={`Students in ${selected.title}`}>
-          <h2 className="mb-3 font-display text-lg font-semibold text-(--color-ink)">Students in {selected.title}</h2>
+          <h2 className="mb-3 text-lg font-semibold text-(--color-ink)">Students in {selected.title}</h2>
           {students.loading ? (
             <LoadingBlock />
           ) : students.error ? (

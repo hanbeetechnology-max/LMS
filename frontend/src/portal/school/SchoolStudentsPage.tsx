@@ -59,7 +59,7 @@ export function SchoolStudentsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Name or email"
-            className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-violet)"
+            className="mt-1 min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-paper) px-3 text-sm text-(--color-ink) focus-visible:outline-2 focus-visible:outline-(--color-accent)"
           />
         </div>
         {students.loading ? (
@@ -112,7 +112,7 @@ export function SchoolStudentsPage() {
           <Card className="mt-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="font-display text-lg font-semibold text-(--color-ink)">{selected.fullName}</h2>
+                <h2 className="text-lg font-semibold text-(--color-ink)">{selected.fullName}</h2>
                 <p className="break-all text-sm text-(--color-slate)">{selected.email}</p>
               </div>
               <button type="button" onClick={() => setSelected(null)} className="min-h-11 rounded-full border border-(--color-line) px-4 text-sm font-semibold text-(--color-ink) hover:bg-(--color-cloud)">

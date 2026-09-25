@@ -3,7 +3,7 @@ import { useAuth } from "../../lib/AuthProvider";
 import { useToast } from "../../lib/ToastProvider";
 import { buildInviteMessage, buildMailBatches, emailsAsText } from "../../lib/inviteMail";
 import { fetchSchoolJoinLink } from "../../lib/portalApi";
-import { Card, ErrorBlock, LoadingBlock, useAsync } from "../kit";
+import { Card, Eyebrow, ErrorBlock, LoadingBlock, useAsync } from "../kit";
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -15,7 +15,7 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 const btn =
-  "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-paper) px-4 text-sm font-semibold text-(--color-ink) transition-colors hover:bg-(--color-cloud) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-violet)";
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-paper) px-4 text-sm font-semibold text-(--color-ink) transition-colors hover:bg-(--color-cloud) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)";
 
 /** Step 2 of inviting: the sender's own mail app sends the message. */
 export function MailStep({ orgId, schoolName, emails }: { orgId: string; schoolName: string; emails: string[] }) {
@@ -40,7 +40,8 @@ export function MailStep({ orgId, schoolName, emails }: { orgId: string; schoolN
 
   return (
     <Card>
-      <h3 className="font-display text-lg font-semibold text-(--color-ink)">Send the invitations from your own email</h3>
+      <Eyebrow>Step 2 of 3 · Send invitations</Eyebrow>
+      <h3 className="mt-1 text-lg font-semibold text-(--color-ink)">Send the invitations from your own email</h3>
       <p className="mt-1 text-sm text-(--color-slate)">
         The students are added as BCC, so they cannot see each other. You only add your own address in To or Cc.
       </p>
