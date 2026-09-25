@@ -203,6 +203,76 @@ for (const [email, title] of [["demo.s3@hanbee.test", RC], ["demo.solo@hanbee.te
 }
 say("  courses, enrollments, progress, certificate, applications done");
 
+// ---------------------------------------------------------------- lesson reviews and certificates
+say("== lesson reviews and certificates");
+const QUIZ = {
+  [RC]: { lesson: "Meet your RC car", title: "Meet your RC car check (demo)", questions: [
+    ["What should you switch on first?", ["The transmitter", "The car", "Neither"]],
+    ["Why charge the battery fully?", ["It gives steady power", "It looks nicer", "It is required by law"]],
+  ] },
+  [RS]: { lesson: "Track layout and racing line", title: "Racing line check (demo)", questions: [
+    ["Which line is usually fastest?", ["The smooth racing line", "The shortest wall hug", "Any line"]],
+    ["What should you do before the corner?", ["Slow down early", "Speed up", "Close your eyes"]],
+  ] },
+};
+const quizOf = {}; // course title -> { assessmentId, lessonId, questions: [{ id, options: [{id, correct}] }] }
+for (const [title, def] of Object.entries(QUIZ)) {
+  const lesson = (await q("select l.id from lessons l join modules m on m.id=l.module_id where m.course_id=$1 and l.title=$2", [courseId[title], def.lesson]))[0]?.id;
+  if (!lesson) { say(`  ! lesson ${def.lesson} missing`); continue; }
+  let aid = (await q("select id from assessments where lesson_id=$1", [lesson]))[0]?.id;
+  if (!aid) {
+    aid = (await q("insert into assessments (lesson_id, title, created_by) values ($1,$2,$3) returning id", [lesson, def.title, jamieId]))[0].id;
+    for (const [qi, [prompt, options]] of def.questions.entries()) {
+      const qid = (await q("insert into assessment_questions (assessment_id, prompt, sort_order) values ($1,$2,$3) returning id", [aid, prompt, qi]))[0].id;
+      for (const [oi, label] of options.entries()) await q("insert into assessment_options (question_id, label, is_correct, sort_order) values ($1,$2,$3,$4)", [qid, label, oi === 0, oi]);
+    }
+    say(`  quiz added to ${title}`);
+  }
+  const questions = [];
+  for (const row of await q("select id from assessment_questions where assessment_id=$1 order by sort_order", [aid])) {
+    questions.push({ id: row.id, options: await q("select id, is_correct as correct from assessment_options where question_id=$1 order by sort_order", [row.id]) });
+  }
+  quizOf[title] = { assessmentId: aid, lessonId: lesson, questions };
+}
+const enrollmentOf = async (email, title) => (await q("select e.id from enrollments e join sections s on s.id=e.section_id where e.student_id=$1 and s.course_id=$2 limit 1", [await pid(email), courseId[title]]))[0]?.id;
+// correct = how many questions to answer right (the rest pick a wrong option)
+async function submitQuiz(email, title, correct, after) {
+  const quiz = quizOf[title];
+  const enrollment = await enrollmentOf(email, title);
+  if (!quiz || !enrollment) { say(`  ! ${email} has no enrollment in ${title}`); return; }
+  if ((await q("select 1 from assessment_submissions where assessment_id=$1 and enrollment_id=$2", [quiz.assessmentId, enrollment])).length) return;
+  const answers = {};
+  quiz.questions.forEach((qu, i) => { answers[qu.id] = (i < correct ? qu.options.find((o) => o.correct) : qu.options.find((o) => !o.correct)).id; });
+  const r = await rpc("submit_assessment", { p_assessment_id: quiz.assessmentId, p_enrollment_id: enrollment, p_answers: answers }, await login(email));
+  if (!r.ok) { say(`  ! submit for ${email}: ${errText(r)}`); return; }
+  const sub = Array.isArray(r.json) ? r.json[0] : r.json;
+  if (after === "verify") await rpcSoft("verify_assessment_submission", { p_submission_id: sub.id }, jamie);
+  if (after === "overdue") await q("update assessment_submissions set submitted_at = now() - interval '25 minutes', auto_unlock_at = now() - interval '15 minutes' where id=$1", [sub.id]);
+  say(`  ${email} submitted ${title} (${after ?? "waiting"})`);
+}
+await submitQuiz("demo.s1@hanbee.test", RC, 2, "verify");
+await submitQuiz("demo.s2@hanbee.test", RC, 1, "verify");
+await submitQuiz("demo.s4@hanbee.test", RS, 1, "verify");
+await submitQuiz("demo.t1@hanbee.test", RC, 0, null);
+await submitQuiz("demo.s4@hanbee.test", RC, 2, null);
+await submitQuiz("demo.s1@hanbee.test", RS, 2, null);
+await submitQuiz("demo.t2@hanbee.test", RC, 1, "overdue");
+
+// two more students finish Race Strategy and earn a certificate
+for (const email of ["demo.t1@hanbee.test", "demo.s3@hanbee.test"]) {
+  const uid = await pid(email);
+  if ((await q("select 1 from certificates where user_id=$1 and course_title=$2", [uid, RS])).length) continue;
+  const sec = await sectionOf(RS);
+  if (!(await q("select 1 from enrollments where student_id=$1 and section_id=$2", [uid, sec])).length) await rpcSoft("enroll_student", { p_student: uid, p_section: sec }, jamie);
+  await submitQuiz(email, RS, 2, "verify");
+  // the review happened two days ago, so the quiz no longer blocks the lesson
+  await q("update assessment_submissions set submitted_at = now() - interval '2 days', auto_unlock_at = now() - interval '2 days' + interval '10 minutes' where enrollment_id=$1", [await enrollmentOf(email, RS)]);
+  const t = await login(email);
+  for (const lid of await lessonsOf(courseId[RS])) await rpcSoft("complete_lesson", { p_lesson_id: lid }, t, /already|earlier/i);
+  const r = await rpc("issue_certificate", { p_course_title: RS }, t);
+  say(r.ok ? `  ${email} earned a certificate for ${RS}` : `  ! certificate for ${email}: ${errText(r)}`);
+}
+
 // ---------------------------------------------------------------- tournaments
 say("== tournaments");
 const studentId = pid;

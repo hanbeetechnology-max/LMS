@@ -2,9 +2,54 @@ import { useState } from "react";
 import { useAuth } from "../../lib/AuthProvider";
 import { fetchCourseStudents, fetchSchoolCourseParticipation } from "../../lib/portalApi";
 import { ProgressBar } from "./ProgressBar";
-import { Badge, Card, DataTable, ErrorBlock, LoadingBlock, PageHeader, relativeTime, useAsync } from "../kit";
+import { fetchAssessmentReviews } from "../../lib/assessmentApi";
+import { fetchCertificatesOverview } from "../../lib/certificatesApi";
+import { CertificatesTable, ReviewsTable, useNow } from "../shared/learning/parts";
+import { Badge, Card, DataTable, ErrorBlock, LoadingBlock, PageHeader, SlideSwitcher, relativeTime, useAsync } from "../kit";
+
+const TABS = [
+  { id: "participation", label: "Participation" },
+  { id: "reviews", label: "Lesson reviews" },
+  { id: "certificates", label: "Certificates" },
+];
+
+function SchoolReviews() {
+  const { data, loading, error, reload } = useAsync(fetchAssessmentReviews, []);
+  const now = useNow();
+  if (loading && !data) return <LoadingBlock />;
+  if (error) return <ErrorBlock onRetry={reload} />;
+  return (
+    <ReviewsTable
+      rows={data ?? []}
+      now={now}
+      showSchool={false}
+      emptyTitle="No lesson reviews yet"
+      emptyBody="When your students finish a lesson quiz, it shows up here with its score and status."
+    />
+  );
+}
+
+function SchoolCertificates() {
+  const { data, loading, error, reload } = useAsync(fetchCertificatesOverview, []);
+  if (loading && !data) return <LoadingBlock />;
+  if (error) return <ErrorBlock onRetry={reload} />;
+  return <CertificatesTable rows={data ?? []} showSchool={false} emptyTitle="No certificates yet" emptyBody="A certificate appears when one of your students completes every lesson of a course." />;
+}
 
 export function SchoolCoursesPage() {
+  const [tab, setTab] = useState("participation");
+  return (
+    <>
+      <PageHeader title="Courses" subtitle="Participation, lesson reviews and certificates for your students. This page is read-only." />
+      <div className="mb-5">
+        <SlideSwitcher label="Courses view" tabs={TABS} value={tab} onChange={setTab} />
+      </div>
+      {tab === "participation" ? <Participation /> : tab === "reviews" ? <SchoolReviews /> : <SchoolCertificates />}
+    </>
+  );
+}
+
+function Participation() {
   const { profile } = useAuth();
   const orgId = profile?.school?.orgId ?? "";
   const [selected, setSelected] = useState<{ id: string; title: string } | null>(null);
@@ -14,7 +59,6 @@ export function SchoolCoursesPage() {
 
   return (
     <>
-      <PageHeader title="Courses" subtitle="Which of your students take which course. This page is read-only." />
       {courses.loading ? (
         <LoadingBlock />
       ) : courses.error ? (
