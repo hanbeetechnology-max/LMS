@@ -123,6 +123,9 @@ export interface HanbeeStaffOverviewRow {
   openTasks: number;
   doneTasks: number;
   lastClockIn: string | null;
+  lateDaysLast30: number;
+  absentDaysLast30: number;
+  highPriorityOpen: number;
 }
 
 export interface SiteTournamentOverview {
@@ -443,6 +446,7 @@ export async function fetchHanbeeStaffOverview(): Promise<HanbeeStaffOverviewRow
     staffId: r.staff_id, fullName: r.full_name, email: r.email, approved: r.approved, accountStatus: r.account_status,
     hoursLast7Days: Number(r.hours_last_7_days), daysWorkedLast30: r.days_worked_last_30, openTasks: r.open_tasks,
     doneTasks: r.done_tasks, lastClockIn: r.last_clock_in,
+    lateDaysLast30: Number(r.late_days_last_30 ?? 0), absentDaysLast30: Number(r.absent_days_last_30 ?? 0), highPriorityOpen: Number(r.high_priority_open ?? 0),
   }));
 }
 
