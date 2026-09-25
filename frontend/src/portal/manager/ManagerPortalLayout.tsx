@@ -19,6 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Schools", to: "/manager/schools", Icon: TrophyIcon },
   { label: "Hanbee staff", to: "/manager/staff", Icon: AttendanceIcon },
   { label: "Announcements", to: "/manager/announcements", Icon: AnnouncementIcon },
+  { label: "Schedule", to: "/manager/schedule", Icon: SchedulingIcon },
   { label: "Tasks", to: "/manager/tasks", Icon: SchedulingIcon },
   { label: "Chat", to: "/manager/chat", Icon: MessagingIcon },
 ];

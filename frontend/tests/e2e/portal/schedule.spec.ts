@@ -100,3 +100,19 @@ test.describe("schedule", () => {
     await page.screenshot({ path: "test-results/schedule-390.png", fullPage: true });
   });
 });
+
+// Only the manager may add holidays. The form is checked, never submitted, so no real holiday is created.
+test("manager schedule has the holiday form; it is not offered to Hanbee staff", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/email/i).fill("morgan@hanbeelms.edu");
+  await page.getByLabel(/^password/i).fill("manager123");
+  await page.getByRole("button", { name: /^sign in$/i }).click();
+  await page.waitForURL(/manager\/monitor/);
+  await page.getByRole("link", { name: /^schedule$/i }).first().click();
+  await expect(page).toHaveURL(/manager\/schedule/);
+  await page.getByRole("button", { name: /^\+ ?add$/i }).first().click();
+  const holidayTab = page.getByRole("button", { name: "Holiday", exact: true }).last();
+  await expect(holidayTab).toBeVisible();
+  await holidayTab.click();
+  await expect(page.getByLabel(/name/i).first()).toBeVisible();
+});
