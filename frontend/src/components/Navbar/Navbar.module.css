@@ -1,0 +1,206 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 0 40px; /* Reduced to match the 40px left padding */
+  height: 100px;
+  display: flex;
+  align-items: center; /* Center everything vertically */
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.navContent {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center; /* Ensure contents are vertically aligned */
+  width: 100%;
+}
+
+/* Logo */
+.logo {
+  font-family: var(--font-logo);
+  font-size: 28px;
+  font-weight: 400;
+  color: #ffffff;
+  letter-spacing: 2px;
+  text-decoration: none;
+  justify-self: start;
+}
+
+/* Center Nav Links */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 72px; /* Increased gap even slightly more */
+  justify-self: center;
+  transform: translateX(-80px); /* Shifted even closer to the logo */
+}
+
+.navLink {
+  display: inline-block; /* Required for transform (scale) to work on <a> tags */
+  font-family: var(--font-body);
+  font-size: 14.5px; /* Increased slightly */
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85); /* Changed to white for dark theme */
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 4px;
+  letter-spacing: 0.5px;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+.active {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 1);
+}
+
+.underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #ffffff;
+}
+
+/* Right Section */
+.navRight {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
+.searchBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-white);
+  width: 32px; /* Slightly larger to fit the glass circle nicely */
+  height: 32px;
+  
+  /* Ultra-Realistic Liquid Glass Effect */
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.4);
+  border-left-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    /* Dispersion/Chromatic Aberration */
+    -1px 0 3px rgba(255, 0, 80, 0.2),
+    1px 0 3px rgba(0, 200, 255, 0.2),
+    /* Inner reflections */
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    /* Outer drop shadow */
+    0 8px 24px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+  
+  border-radius: 50%;
+  margin-right: 28px; /* Increased gap between search and signin */
+  transition: all 0.3s ease;
+}
+
+.searchBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.searchBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    -2px 0 4px rgba(255, 0, 80, 0.3),
+    2px 0 4px rgba(0, 200, 255, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.6),
+    0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.signIn {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 500; /* Match navLink weight, 600 was not imported */
+  color: #ffffff; /* User requested white color */
+  text-decoration: none;
+  margin-right: 44px; /* Increased gap before get started button */
+  letter-spacing: 0.5px;
+  transition: opacity 0.2s ease;
+}
+
+.signIn:hover {
+  opacity: 0.8;
+}
+
+.getStartedBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  font-weight: 500; /* Match navLink weight */
+  color: var(--color-text-white);
+  
+  /* Ultra-Realistic Liquid Glass Effect */
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.4);
+  border-left-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    /* Dispersion/Chromatic Aberration */
+    -2px 0 4px rgba(255, 0, 80, 0.15),
+    2px 0 4px rgba(0, 200, 255, 0.15),
+    /* Inner reflections */
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+    /* Outer drop shadow */
+    0 8px 32px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+  
+  padding: 10px 24px;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.getStartedBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    -3px 0 6px rgba(255, 0, 80, 0.25),
+    3px 0 6px rgba(0, 200, 255, 0.25),
+    inset 0 1px 3px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.getStartedBtn svg {
+  transition: transform 0.3s ease;
+  width: 12px;
+  height: 12px;
+}
+
+.getStartedBtn:hover svg {
+  transform: translateX(4px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1600px) {
+  .navLinks { gap: 5vw; }
+  .signIn { margin-right: 4vw; }
+}
+
+@media (max-width: 1200px) {
+  .navbar { padding: 30px 48px 0 48px; }
+  .navLinks { gap: 3vw; }
+  .signIn { margin-right: 3vw; }
+  .searchBtn { margin-right: 2vw; }
+}
+
+@media (max-width: 900px) {
+  .navLinks { display: none; }
+  .navContent { grid-template-columns: 1fr 1fr; }
+}

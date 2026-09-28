@@ -103,6 +103,7 @@ await asAnon(); r=await tryq("select count(*)::int n from tournament_teams"); ch
 await asUser(staffA); check("list_addable_students excludes team members", await cnt("select count(*)::int n from list_addable_students($1)",[T])===0);
 
 // --- apply + trust
+await asOwner(); await c.query("update tournaments set team_size=2 where id=$1",[T]); await c.query("insert into tournament_team_members (team_id,tournament_id,student_id,org_id_at_join) values ($1,$2,$3,$4)",[teamB,T,a3,(await one("select org_id from tournament_teams where id=$1",[teamB])).org_id]);
 await asUser(a1); r=await tryq("select apply_team($1,true)",[teamA]); check("student cannot apply team",!!r.e);
 await asUser(staffA); r=await tryq("update tournament_teams set status='verified' where id=$1",[teamA]); check("direct update to verified blocked",!!r.e);
 r=await tryq("insert into tournament_teams (tournament_id,org_id,name,status,payment_declared) values ($1,$2,'sneaky','verified',true)",[T,orgA]); check("direct insert blocked",!!r.e);

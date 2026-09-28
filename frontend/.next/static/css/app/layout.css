@@ -1,0 +1,89 @@
+/*!*************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[3]!./app/globals.css ***!
+  \*************************************************************************************************************************************************************************************************************************************************************/
+@font-face {
+  font-family: 'Deltha';
+  src: url('/fonts/Deltha.otf') format('opentype'),
+    url('/fonts/Deltha.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Afacad:wght@400;500;700&family=Inter:wght@300;400;500&family=Oranienbaum&family=Outfit:wght@300;400;500;700&display=swap');
+
+/* ===== CSS RESET ===== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Afacad', sans-serif;
+  background: #000000;
+  color: #ffffff;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+  font-family: inherit;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ===== CSS CUSTOM PROPERTIES ===== */
+:root {
+  /* Fonts */
+  --font-logo: 'Deltha', 'Cormorant Garamond', serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Afacad', sans-serif;
+  --font-accent: 'Inter', sans-serif;
+
+  /* Colors */
+  --color-bg: #0a0a0a;
+  --color-text-white: #ffffff;
+  --color-text-dark: rgba(0, 0, 0, 0.8);
+  --color-text-heading: rgba(0, 0, 0, 0.55); /* More semi-transparent */
+  --color-tagline: rgb(53, 45, 39);
+  --color-subtitle: rgb(30, 18, 8);
+  --color-cta-text: rgb(63, 58, 58);
+  --color-signin: #d9d9d9;
+  --color-icon-muted: rgb(161, 155, 155);
+
+  /* Glass */
+  --glass-bg: rgba(30, 28, 28, 0.51);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-radius: 23px;
+
+  /* Spacing */
+  --nav-height: 80px;
+  --section-padding: 60px;
+}

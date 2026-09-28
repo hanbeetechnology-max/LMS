@@ -1,0 +1,81 @@
+:root, [data-theme="dark"] {
+  --bg-page: #23272f;
+  --bg-card: #23272f;
+  --bg-card-hover: #23272f;
+  --bg-input: #23272f;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #60a5fa;
+  
+  /* Classic Dark Neumorphism */
+  --clay-shadow-subtle: 2px 2px 5px rgba(0, 0, 0, 0.2), -1px -1px 3px rgba(255, 255, 255, 0.02);
+  --clay-shadow-outer: 5px 5px 12px rgba(0, 0, 0, 0.45), -3px -3px 8px rgba(255, 255, 255, 0.03);
+  --clay-shadow-inner: none;
+  --clay-shadow-elevated: 10px 10px 20px rgba(0, 0, 0, 0.5), -5px -5px 12px rgba(255, 255, 255, 0.04);
+  
+  /* Buttons and Active States */
+  --clay-shadow-button: 3px 3px 8px rgba(0, 0, 0, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.04);
+  --clay-shadow-active: inset 3px 3px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.04);
+  
+  --clay-radius-lg: 32px;
+  --clay-radius-md: 24px;
+  --clay-radius-sm: 16px;
+  
+  --border-subtle: none;
+}
+
+[data-theme="light"] {
+  --bg-page: #e6ebf2;
+  --bg-card: #e6ebf2;
+  --bg-card-hover: #e6ebf2;
+  --bg-input: #e6ebf2;
+  --text-main: #2d3142;
+  --text-muted: #6b7280;
+  --accent: #3b82f6;
+  
+  /* Classic Light Neumorphism */
+  --clay-shadow-subtle: 2px 2px 5px rgba(163, 177, 198, 0.25), -2px -2px 5px rgba(255, 255, 255, 0.6);
+  --clay-shadow-outer: 5px 5px 12px rgba(163, 177, 198, 0.4), -4px -4px 10px rgba(255, 255, 255, 0.8);
+  --clay-shadow-inner: none;
+  --clay-shadow-elevated: 10px 10px 20px rgba(163, 177, 198, 0.45), -6px -6px 16px rgba(255, 255, 255, 0.9);
+  
+  /* Buttons and Active States */
+  --clay-shadow-button: 3px 3px 8px rgba(163, 177, 198, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.9);
+  --clay-shadow-active: inset 3px 3px 6px rgba(163, 177, 198, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  
+  --border-subtle: none;
+}
+
+[data-theme="personalized"] {
+  --bg-page: hsl(var(--user-hue, 215), 50%, var(--user-lightness, 85%));
+  --bg-card: hsl(var(--user-hue, 215), 50%, var(--user-lightness, 85%));
+  --bg-card-hover: hsl(var(--user-hue, 215), 50%, calc(var(--user-lightness, 85%) - 3%));
+  --bg-input: hsl(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 5%));
+  
+  /* Text flips sharply to dark (15%) when bg is >63%, and light (95%) when bg is <63% */
+  --text-main: hsl(var(--user-hue, 215), 30%, clamp(15%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%));
+  --text-muted: hsla(var(--user-hue, 215), 30%, clamp(15%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%), 0.7);
+  
+  /* Accent color flips sharply to bright white-tint (95%) when dark, and strong vibrant dark (20%) when light */
+  --accent: hsl(var(--user-hue, 215), 90%, clamp(20%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%));
+  
+  /* Personalized Neumorphism Shadows that adapt to background lightness */
+  --shadow-dark: hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) - 18%), 0.6);
+  --shadow-light: hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) + 15%), 0.9);
+  
+  --clay-shadow-subtle: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  --clay-shadow-outer: 5px 5px 12px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  --clay-shadow-inner: none;
+  --clay-shadow-elevated: 10px 10px 20px hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) - 25%), 0.6), -6px -6px 16px var(--shadow-light);
+  
+  --clay-shadow-button: 3px 3px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
+  --clay-shadow-active: inset 3px 3px 6px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+  
+  --border-subtle: none;
+}
+
+/* Base resets */
+[data-theme] {
+  color: var(--text-main);
+}
+
