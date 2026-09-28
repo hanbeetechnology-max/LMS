@@ -1,0 +1,166 @@
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 700px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Background Image */
+.bgImage {
+  position: absolute;
+  inset: 0;
+  background-image: url('/hero-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Gradient Overlay - darker on left for text readability */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.15) 50%,
+      transparent 100%);
+  z-index: 1;
+}
+
+/* Content */
+.content {
+  position: relative;
+  z-index: 5;
+  padding-left: 40px;
+  /* Reduced to align with logo at edge */
+  padding-top: calc(var(--nav-height) + 12vh);
+  /* Push down slightly */
+  width: 100%;
+}
+
+/* Tagline */
+.tagline {
+  font-family: var(--font-accent);
+  font-size: 13px;
+  /* Scaled down */
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 6px;
+  /* Elongated spacing for a cinematic feel */
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* Heading */
+.heading {
+  font-family: var(--font-heading);
+  font-size: clamp(50px, 6.5vw, 84px);
+  /* Slightly reduced size */
+  font-weight: 500;
+  /* Minimalistic, elegant weight */
+  letter-spacing: -1.5px;
+  /* Tight tracking for a highly contemporary look */
+  color: rgba(255, 255, 255, 0.95);
+  /* Pure white for dark theme */
+  line-height: 1.05;
+  margin-bottom: 32px;
+}
+
+.headingLine {
+  display: block;
+}
+
+/* Subtitle */
+.subtitle {
+  font-family: var(--font-accent);
+  font-size: clamp(16px, 2vw, 20px);
+  /* Significantly increased for better hierarchy */
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.85);
+  /* Slightly brighter for readability */
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 750px;
+  /* Widened further to ensure a sleek two-line layout */
+}
+
+/* CTA Button */
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-white);
+
+  /* Ultra-Realistic Liquid Glass Effect */
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.4);
+  border-left-color: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    /* Dispersion/Chromatic Aberration */
+    -2px 0 4px rgba(255, 0, 80, 0.15),
+    2px 0 4px rgba(0, 200, 255, 0.15),
+    /* Inner reflections */
+    inset 0 1px 2px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+    /* Outer drop shadow */
+    0 8px 32px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(140%) brightness(1.15);
+
+  text-decoration: none;
+  padding: 10px 24px;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.ctaButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    -3px 0 6px rgba(255, 0, 80, 0.25),
+    3px 0 6px rgba(0, 200, 255, 0.25),
+    inset 0 1px 3px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 3px rgba(255, 255, 255, 0.2),
+    0 12px 40px rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.ctaArrow {
+  transition: transform 0.3s ease;
+  width: 14px;
+  height: 14px;
+}
+
+.ctaButton:hover .ctaArrow {
+  transform: translateX(4px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .content {
+    padding-left: 48px;
+    padding-top: calc(var(--nav-height) + 8vh);
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding-left: 24px;
+    padding-top: calc(var(--nav-height) + 40px);
+  }
+
+  .heading {
+    font-size: clamp(32px, 8vw, 48px);
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    margin-bottom: 24px;
+  }
+}
