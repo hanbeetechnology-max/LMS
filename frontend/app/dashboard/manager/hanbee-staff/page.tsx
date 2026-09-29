@@ -16,7 +16,7 @@ export default function ManagerHanbeeStaffPage() {
   const load = useCallback(async () => {
     const profile = await getAccountProfile();
     if (profile.role !== "manager") throw new Error("Only the manager can manage Hanbee staff accounts.");
-    const rows = await rpc<StaffRow[]>("hanbee_staff_overview");
+    const rows = await rpc<StaffRow[]>("hanbee_staff_overview", {});
     setStaff(rows);
   }, []);
 
