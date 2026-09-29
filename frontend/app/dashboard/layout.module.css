@@ -41,6 +41,8 @@
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .navLink {
@@ -249,6 +251,72 @@
   padding: 40px;
   /* Add subtle shadow inside the scroll area */
   box-shadow: inset 0 20px 40px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 1050px) {
+  .sidebar { width: 224px; padding: 20px 12px; }
+  .header { padding: 0 24px; }
+  .searchBar { margin-left: 20px; width: min(260px, 28vw); }
+  .contentScroll { padding: 28px 24px; }
+}
+
+@media (max-width: 760px) {
+  .dashboardContainer { flex-direction: column; height: 100dvh; }
+  .sidebar {
+    width: 100%;
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: var(--border-subtle);
+    gap: 10px;
+  }
+  .logo { font-size: 17px; margin: 0; padding: 0 4px; white-space: nowrap; }
+  .logoHighlight { display: none; }
+  .modeSwitcherContainer { flex: 0 0 174px; margin: 0; }
+  .navMenu {
+    flex: 1 1 auto;
+    flex-direction: row;
+    gap: 6px;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .navLink { flex: 0 0 auto; padding: 9px 11px; font-size: 12px; white-space: nowrap; gap: 7px; }
+  .navIcon { width: 16px; height: 16px; }
+  .userProfile { display: none; }
+  .sidebar > button.navLink { width: auto !important; margin: 0 !important; padding: 9px; }
+  .sidebar > button.navLink { font-size: 0; }
+  .sidebar > button.navLink .navIcon { width: 18px; height: 18px; }
+  .mainArea { min-height: 0; }
+  .header { height: auto; min-height: 62px; padding: 10px 16px; gap: 12px; }
+  .headerLeft { min-width: 0; }
+  .greeting { font-size: 10px; }
+  .greetingName { font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .searchBar { display: none; }
+  .headerRight { gap: 12px; }
+  .date { font-size: 11px; }
+  .headerUser { gap: 7px; }
+  .headerUser .userInfo { display: none; }
+  .contentScroll { padding: 20px 14px; }
+}
+
+@media (max-width: 560px) {
+  .sidebar { flex-wrap: wrap; }
+  .logo { flex: 0 0 auto; }
+  .modeSwitcherContainer { margin-left: auto; flex-basis: 160px; }
+  .navMenu { order: 3; flex: 1 0 100%; }
+  .metricsRow { flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+  .metricsRow > * { flex: 1 1 calc(50% - 10px); min-width: 135px; }
+  .metricsGrid { grid-template-columns: 1fr; gap: 12px; }
+  .dashboardGrid { grid-template-columns: 1fr; gap: 18px; }
+  .quickActions { flex-direction: column; gap: 10px; }
+  .filterGroup { flex-wrap: wrap; gap: 8px; }
+  .filterBtn { flex: 1 1 auto; justify-content: center; padding: 10px 12px; }
+  .sectionCard { padding: 18px; }
+  .pageTitle { font-size: 22px; }
+  .pageSubtitle { line-height: 1.5; }
+  .tableContainer { overflow-x: auto; }
+  .dataTable { min-width: 640px; }
 }
 
 /* Scrollbar styles */

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { Moon, Sun, Monitor, Palette } from "lucide-react";
+import Link from "next/link";
 import styles from "./settings.module.css";
 import { useTheme } from "../ThemeProvider";
+import { getAccountProfile, updateAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
 
 export default function SettingsPage() {
   const [toggles, setToggles] = useState({
-    twoFactor: false,
     tournaments: true,
     announcements: true,
     courses: false,
@@ -15,17 +16,55 @@ export default function SettingsPage() {
 
   const { theme, setTheme, accentHue, setAccentHue, accentLightness, setAccentLightness } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getAccountProfile()
+      .then((value) => {
+        if (!active) return;
+        setProfile(value);
+        setFullName(value.full_name);
+        try {
+          const saved = localStorage.getItem(`hanbee-dashboard-toggles:${value.id}`);
+          if (saved) setToggles((current) => ({ ...current, ...JSON.parse(saved) }));
+        } catch {
+          localStorage.removeItem(`hanbee-dashboard-toggles:${value.id}`);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) setFeedback(error instanceof Error ? error.message : "We couldn't load your profile.");
+      })
+      .finally(() => { if (active) setProfileLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const handleToggle = (key: keyof typeof toggles) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+    const next = { ...toggles, [key]: !toggles[key] };
+    setToggles(next);
+    if (profile) localStorage.setItem(`hanbee-dashboard-toggles:${profile.id}`, JSON.stringify(next));
   };
 
-  const handleSave = () => {
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!profile || fullName.trim().length < 2) {
+      setFeedback("Enter a name with at least 2 characters.");
+      return;
+    }
+    setFeedback("");
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      await updateAccountProfile({ id: profile.id, full_name: fullName });
+      setProfile({ ...profile, full_name: fullName.trim() });
+      setFeedback("Profile saved.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "We couldn't save your changes.");
+    } finally {
       setIsSaving(false);
-      alert("Settings successfully saved!");
-    }, 800);
+    }
   };
 
   return (
@@ -37,78 +76,59 @@ export default function SettingsPage() {
 
       <div className={styles.settingsLayout}>
         {/* Profile Settings */}
-        <section className={styles.sectionCard}>
+        <form className={styles.sectionCard} onSubmit={handleSave}>
           <h2 className={styles.sectionTitle}>Profile Settings</h2>
           
           <div className={styles.profileTop}>
-            <div className={styles.avatarLg}>A</div>
+            <div className={styles.avatarLg}>{(fullName.trim()[0] ?? "H").toUpperCase()}</div>
             <div className={styles.avatarInfo}>
-              <h3>Alex Rivera</h3>
-              <p>JPG, PNG or GIF - Max 2MB</p>
+              <h3>{profileLoading ? "Loading profile…" : profile?.full_name ?? "Hanbee account"}</h3>
+              <p>{profile?.email ?? "Profile details"}</p>
             </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>Full Name</label>
-            <input type="text" className={styles.input} defaultValue="Alex Rivera" />
+            <label className={styles.label} htmlFor="profile-full-name">Full Name</label>
+            <input id="profile-full-name" type="text" className={styles.input} value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={2} maxLength={120} disabled={profileLoading || isSaving} />
           </div>
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Student ID</label>
-              <input type="text" className={styles.input} defaultValue="HB-2026-1542" />
+              <label className={styles.label}>Account email</label>
+              <input type="email" className={styles.input} value={profile?.email ?? ""} readOnly />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.label}>Preferred RC Team</label>
-              <input type="text" className={styles.input} defaultValue="Team Apex" />
+              <label className={styles.label}>Account role</label>
+              <input type="text" className={styles.input} value={profile?.role ?? ""} readOnly />
             </div>
           </div>
 
-          <button className={styles.saveBtn} onClick={handleSave}>
+          {feedback && <p role="status" aria-live="polite">{feedback}</p>}
+          <button className={styles.saveBtn} type="submit" disabled={profileLoading || isSaving || !profile}>
             {isSaving ? "Saving..." : "Save Changes"}
           </button>
-        </section>
+        </form>
 
         {/* Account & Security */}
         <section className={styles.sectionCard}>
           <h2 className={styles.sectionTitle}>Account & Security</h2>
           
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Current Password</label>
-              <input type="password" className={styles.input} defaultValue="********" />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>New Password</label>
-              <input type="password" className={styles.input} defaultValue="********" />
-            </div>
-          </div>
+          <p>To change your password, request a secure reset email for your account.</p>
+          <Link href="/reset-password" className={styles.saveBtn}>Reset password</Link>
 
-          <div className={styles.settingRow} style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
-            <div className={styles.settingRowInfo}>
-              <h4>Two-Factor Authentication</h4>
-              <p>Add an extra layer of security to authenticate logs</p>
-            </div>
-            <div 
-              className={`${styles.toggleSwitch} ${!toggles.twoFactor ? styles.toggleSwitchOff : ''}`} 
-              onClick={() => handleToggle('twoFactor')}
-            />
-          </div>
         </section>
 
         {/* Notification Preferences */}
         <section className={styles.sectionCard}>
           <h2 className={styles.sectionTitle}>Notification Preferences</h2>
+          <p>These preferences are saved on this device.</p>
           
           <div className={styles.settingRow} style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
             <div className={styles.settingRowInfo}>
               <h4>Tournament Updates</h4>
               <p>Race schedules, registration, results</p>
             </div>
-            <div 
-              className={`${styles.toggleSwitch} ${!toggles.tournaments ? styles.toggleSwitchOff : ''}`} 
-              onClick={() => handleToggle('tournaments')}
-            />
+            <button type="button" role="switch" aria-checked={toggles.tournaments} aria-label="Tournament updates" className={`${styles.toggleSwitch} ${!toggles.tournaments ? styles.toggleSwitchOff : ''}`} onClick={() => handleToggle('tournaments')} />
           </div>
 
           <div className={styles.settingRow}>
@@ -116,10 +136,7 @@ export default function SettingsPage() {
               <h4>New Announcements</h4>
               <p>Staff and manager broadcasts</p>
             </div>
-            <div 
-              className={`${styles.toggleSwitch} ${!toggles.announcements ? styles.toggleSwitchOff : ''}`} 
-              onClick={() => handleToggle('announcements')}
-            />
+            <button type="button" role="switch" aria-checked={toggles.announcements} aria-label="New announcements" className={`${styles.toggleSwitch} ${!toggles.announcements ? styles.toggleSwitchOff : ''}`} onClick={() => handleToggle('announcements')} />
           </div>
 
           <div className={styles.settingRow}>
@@ -127,10 +144,7 @@ export default function SettingsPage() {
               <h4>Course Reminders</h4>
               <p>Lesson deadlines and new modules</p>
             </div>
-            <div 
-              className={`${styles.toggleSwitch} ${!toggles.courses ? styles.toggleSwitchOff : ''}`} 
-              onClick={() => handleToggle('courses')}
-            />
+            <button type="button" role="switch" aria-checked={toggles.courses} aria-label="Course reminders" className={`${styles.toggleSwitch} ${!toggles.courses ? styles.toggleSwitchOff : ''}`} onClick={() => handleToggle('courses')} />
           </div>
         </section>
 

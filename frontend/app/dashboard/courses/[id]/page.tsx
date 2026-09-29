@@ -1,13 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, Play, CheckCircle, FileText, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import { CheckCircle, ChevronLeft, Play } from "lucide-react";
+import { completeLesson, fetchCourseContent, type CourseContent, type CourseLesson } from "../../../../lib/coursesApi";
 import styles from "./lesson.module.css";
 
-export default function LessonViewer({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState("content");
-  const [quizCompleted, setQuizCompleted] = useState(false);
+export default function LessonViewer() {
+  const params = useParams<{ id: string }>();
+  const courseId = params.id;
+  const [course, setCourse] = useState<CourseContent | null>(null);
+  const [activeLessonId, setActiveLessonId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function loadCourse() {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await fetchCourseContent(courseId);
+      setCourse(result);
+      setActiveLessonId((current) => {
+        const allLessons = result.modules.flatMap((module) => module.lessons);
+        return allLessons.some((lesson) => lesson.id === current)
+          ? current
+          : allLessons.find((lesson) => !lesson.completed)?.id ?? allLessons[0]?.id ?? "";
+      });
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Couldn't load this course.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadCourse(); }, [courseId]);
+
+  const lessons = useMemo(() => course?.modules.flatMap((module) =>
+    module.lessons.map((lesson) => ({ ...lesson, moduleTitle: module.title })),
+  ) ?? [], [course]);
+  const activeIndex = lessons.findIndex((lesson) => lesson.id === activeLessonId);
+  const activeLesson = lessons[activeIndex] as (CourseLesson & { moduleTitle: string }) | undefined;
+
+  async function markComplete() {
+    if (!activeLesson || !course) return;
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const certificateIssued = await completeLesson(activeLesson.id, course.id, course.title);
+      setNotice(certificateIssued ? "Course complete. Your certificate has been issued." : "Lesson marked complete.");
+      await loadCourse();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Couldn't save lesson progress.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <p role="status">Loading course…</p>;
+  if (error && !course) return <div role="alert"><p>{error}</p><button type="button" onClick={() => void loadCourse()}>Try again</button></div>;
+  if (!course) return <p>This course isn't available.</p>;
 
   return (
     <div className={styles.lessonContainer}>
@@ -17,146 +72,96 @@ export default function LessonViewer({ params }: { params: { id: string } }) {
 
       <div className={styles.lessonHeader}>
         <div>
-          <h1 className={styles.lessonTitle}>Module 4: Reading Gyroscope Data</h1>
-          <p className={styles.lessonSubtitle}>Intro to RC Telemetry & Sensors</p>
+          <h1 className={styles.lessonTitle}>{activeLesson?.title ?? course.title}</h1>
+          <p className={styles.lessonSubtitle}>{course.title}{activeLesson ? ` · ${activeLesson.moduleTitle}` : ""}</p>
         </div>
         <div className={styles.progressPill}>
-          <span>72% Completed</span>
+          <span>{course.progressPercent}% complete</span>
           <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: '72%' }} />
+            <div className={styles.progressFill} style={{ width: `${course.progressPercent}%` }} />
           </div>
         </div>
       </div>
 
+      {error && <p role="alert">{error}</p>}
+      {notice && <p role="status">{notice}</p>}
+
       <div className={styles.contentGrid}>
-        <div className={styles.mainContent}>
-          
-          <div className={styles.videoPlayerContainer}>
-            {/* Mock Video Player */}
-            <div className={styles.videoPlaceholder}>
-              <button className={styles.playButton}>
-                <Play size={32} fill="currentColor" />
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.tabsContainer}>
-            <button 
-              className={`${styles.tabButton} ${activeTab === 'content' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('content')}
-            >
-              <FileText size={16} /> Lesson Content
-            </button>
-            <button 
-              className={`${styles.tabButton} ${activeTab === 'quiz' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('quiz')}
-            >
-              <CheckCircle size={16} /> Knowledge Check
-            </button>
-            <button 
-              className={`${styles.tabButton} ${activeTab === 'resources' ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab('resources')}
-            >
-              <Download size={16} /> Resources
-            </button>
-          </div>
-
-          <div className={styles.tabPanel}>
-            {activeTab === 'content' && (
-              <div className={styles.markdownContent}>
-                <h2>Understanding the MPU6050</h2>
-                <p>The MPU6050 is a Micro Electro-Mechanical Systems (MEMS) device that contains both a 3-axis accelerometer and a 3-axis gyroscope. It is incredibly useful for maintaining the orientation of your autonomous RC car.</p>
-                
-                <h3>I2C Communication</h3>
-                <p>To read data from the MPU6050, we use the I2C protocol. Ensure that the SDA and SCL pins are properly connected to your microcontroller.</p>
-                
-                <pre><code>
-{`#include <Wire.h>
-const int MPU_ADDR = 0x68;
-
-void setup() {
-  Wire.begin();
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x6B); // PWR_MGMT_1 register
-  Wire.write(0);    // Wake up
-  Wire.endTransmission(true);
-}`}
-                </code></pre>
-              </div>
-            )}
-
-            {activeTab === 'quiz' && (
-              <div className={styles.quizContent}>
-                <h3>Quick Knowledge Check</h3>
-                <p>Which communication protocol is used to interface with the MPU6050?</p>
-                <div className={styles.quizOptions}>
-                  <label className={styles.quizOption}>
-                    <input type="radio" name="q1" /> SPI
-                  </label>
-                  <label className={styles.quizOption}>
-                    <input type="radio" name="q1" onChange={() => setQuizCompleted(true)} /> I2C
-                  </label>
-                  <label className={styles.quizOption}>
-                    <input type="radio" name="q1" /> UART
-                  </label>
+        <section className={styles.mainContent} aria-label="Lesson">
+          {activeLesson ? (
+            <>
+              {activeLesson.youtubeId ? (
+                <div className={styles.videoPlayerContainer}>
+                  <iframe
+                    title={activeLesson.title}
+                    src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(activeLesson.youtubeId)}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    style={{ width: "100%", height: "100%", border: 0 }}
+                  />
                 </div>
+              ) : activeLesson.contentType === "video" && activeLesson.externalUrl ? (
+                <div className={styles.videoPlayerContainer}>
+                  <video controls src={activeLesson.externalUrl} style={{ width: "100%", height: "100%" }}>
+                    Your browser does not support embedded video.
+                  </video>
+                </div>
+              ) : null}
 
-                <div style={{ marginTop: '24px' }}>
-                  <button 
-                    className={`${styles.actionButton} ${!quizCompleted ? styles.disabled : ''}`}
-                    disabled={!quizCompleted}
+              <div className={styles.tabPanel}>
+                <h2>{activeLesson.title}</h2>
+                {activeLesson.bodyText
+                  ? <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{activeLesson.bodyText}</p>
+                  : <p>This lesson doesn't have written content.</p>}
+                {activeLesson.externalUrl && activeLesson.contentType !== "video" && (
+                  <p><a href={activeLesson.externalUrl} target="_blank" rel="noreferrer">Open lesson resource</a></p>
+                )}
+                <button
+                  className={styles.actionButton}
+                  type="button"
+                  disabled={saving || activeLesson.completed}
+                  onClick={() => void markComplete()}
+                >
+                  {saving ? "Saving…" : activeLesson.completed ? "Lesson completed" : "Mark lesson complete"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className={styles.tabPanel}><p>This course has no published lessons yet.</p></div>
+          )}
+        </section>
+
+        <aside className={styles.sidebarMenu}>
+          <h2 className={styles.sidebarTitle}>Course syllabus</h2>
+          {course.modules.map((module) => (
+            <section key={module.id}>
+              <h3>{module.title}</h3>
+              <ul className={styles.syllabusList}>
+                {module.lessons.map((lesson) => (
+                  <li
+                    key={lesson.id}
+                    className={lesson.id === activeLessonId
+                      ? styles.syllabusItemActive
+                      : lesson.completed ? styles.syllabusItemCompleted : styles.syllabusItemLocked}
                   >
-                    Submit & Continue to Next Lesson
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'resources' && (
-              <div className={styles.resourcesContent}>
-                <a href="#" className={styles.resourceCard}>
-                  <Download size={20} />
-                  <div>
-                    <strong>MPU6050 Datasheet</strong>
-                    <span>PDF · 1.2 MB</span>
-                  </div>
-                </a>
-                <a href="#" className={styles.resourceCard}>
-                  <Download size={20} />
-                  <div>
-                    <strong>Sample Python Script</strong>
-                    <span>.py · 4 KB</span>
-                  </div>
-                </a>
-              </div>
-            )}
+                    <button
+                      type="button"
+                      style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", border: 0, background: "transparent", color: "inherit", textAlign: "left", cursor: "pointer" }}
+                      onClick={() => { setActiveLessonId(lesson.id); setNotice(""); }}
+                    >
+                      {lesson.completed ? <CheckCircle size={16} /> : <Play size={15} />}
+                      <span>{lesson.title}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button type="button" disabled={activeIndex <= 0} onClick={() => setActiveLessonId(lessons[activeIndex - 1]?.id ?? "")}>Previous</button>
+            <button type="button" disabled={activeIndex < 0 || activeIndex >= lessons.length - 1} onClick={() => setActiveLessonId(lessons[activeIndex + 1]?.id ?? "")}>Next</button>
           </div>
-
-        </div>
-
-        <div className={styles.sidebarMenu}>
-          <h3 className={styles.sidebarTitle}>Course Syllabus</h3>
-          <ul className={styles.syllabusList}>
-            <li className={styles.syllabusItemCompleted}>
-              <CheckCircle size={16} /> 1. Introduction to Sensors
-            </li>
-            <li className={styles.syllabusItemCompleted}>
-              <CheckCircle size={16} /> 2. Power Requirements
-            </li>
-            <li className={styles.syllabusItemCompleted}>
-              <CheckCircle size={16} /> 3. Wiring the Circuit
-            </li>
-            <li className={styles.syllabusItemActive}>
-              <Play size={16} fill="currentColor" /> 4. Reading Gyroscope Data
-            </li>
-            <li className={styles.syllabusItemLocked}>
-              5. Filtering Noise (Kalman)
-            </li>
-            <li className={styles.syllabusItemLocked}>
-              6. Actuator Mapping
-            </li>
-          </ul>
-        </div>
+        </aside>
       </div>
     </div>
   );

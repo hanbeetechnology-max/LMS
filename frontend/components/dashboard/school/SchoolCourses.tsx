@@ -1,34 +1,11 @@
-import React from 'react';
+"use client";
 
+import { useEffect, useState } from "react";
+import styles from "../../../app/dashboard/dashboard.module.css";
+import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
+import { fetchSchoolCourseParticipation, type SchoolCourseRow } from "../../../lib/schoolAdminApi";
 export default function SchoolCourses() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Courses</h1>
-      <table className="w-full border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 border">Course</th>
-            <th className="p-2 border">Students</th>
-            <th className="p-2 border">Progress</th>
-            <th className="p-2 border">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="p-2 border">Math 101</td>
-            <td className="p-2 border">Alice, Bob</td>
-            <td className="p-2 border">75%</td>
-            <td className="p-2 border"><span className="px-2 py-1 bg-green-200 rounded">New</span></td>
-          </tr>
-          <tr>
-            <td className="p-2 border">Science 101</td>
-            <td className="p-2 border">Charlie</td>
-            <td className="p-2 border">40%</td>
-            <td className="p-2 border"></td>
-          </tr>
-        </tbody>
-      </table>
-      <p className="mt-4 text-sm text-gray-500">Read only view</p>
-    </div>
-  );
+  const [courses,setCourses]=useState<SchoolCourseRow[]>([]); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
+  useEffect(()=>{let active=true;fetchMyOrganizationId().then((id)=>{if(!id)throw new Error("Your account is not linked to an active school.");return fetchSchoolCourseParticipation(id);}).then(rows=>{if(active)setCourses(rows);}).catch((reason:unknown)=>{if(active)setError(reason instanceof Error?reason.message:"We couldn't load course participation.");}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[]);
+  return <div><div className={styles.pageHeader}><h1 className={styles.pageTitle}>School Courses</h1><p className={styles.pageSubtitle}>Read-only course enrollment and progress for your students</p></div>{error&&<p role="alert">{error}</p>}{loading?<p role="status">Loading course progress…</p>:<div className={styles.sectionCard}><div className={styles.tableContainer}><table className={styles.dataTable}><thead><tr><th>Course</th><th>Students</th><th>Average progress</th></tr></thead><tbody>{courses.map(course=><tr key={course.course_id}><td className={styles.cellHighlight}>{course.title}</td><td>{course.students}</td><td>{course.avg_completion_pct}%</td></tr>)}{courses.length===0&&<tr><td colSpan={3}>No student course participation yet.</td></tr>}</tbody></table></div></div>}</div>;
 }
