@@ -1,7 +1,15 @@
+// One-off dev script: pulls a Figma file's layout for design reference.
+// Run with: FIGMA_TOKEN=... FIGMA_FILE_KEY=... node fetchFigma.js
+require('dotenv').config({ path: '.env.local' });
 const https = require('https');
 
-const FIGMA_TOKEN = 'REDACTED-ROTATE-IN-FIGMA';
-const FILE_KEY = 'KOIOzo1MUgfLNd0AF3qzIK';
+const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
+const FILE_KEY = process.env.FIGMA_FILE_KEY;
+
+if (!FIGMA_TOKEN || !FILE_KEY) {
+  console.error('Set FIGMA_TOKEN and FIGMA_FILE_KEY (in frontend/.env.local or the environment) before running this script.');
+  process.exit(1);
+}
 
 const options = {
   hostname: 'api.figma.com',
