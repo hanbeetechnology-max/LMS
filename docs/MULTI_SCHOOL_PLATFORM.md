@@ -66,6 +66,7 @@ Every rule lives in the database, never only in the browser. Suspended or revoke
 | 0036 | `list_assessment_reviews()` and `list_certificates_overview()`: lesson reviews and certificates for the manager and Hanbee staff (everything) and school staff (own school only); students are refused |
 | 0034 | Working on a holiday or a day off counts as present, never late |
 | 0028 | **Tenant scoping**: announcements (`org_id`, pinned, edit and delete rules), calendar (`org_id`, personal `owner_id`), school staff read-only enrollments, discussions limited to enrolled students, profile visibility by school, anonymous tournament-registration insert closed, revocation honoured by course access and lesson completion |
+| 0041 | Solo-student tournament entries, payment declaration, and the Hanbee tournament application review queue |
 
 ### The five allowed signup paths (everything else is refused)
 1. `invite_token` plus the invited email: solo student, co-staff, or a manager-created Hanbee staff or manager account.
@@ -138,7 +139,8 @@ Invite mail links: `mailto:` (default app), Outlook web (`https://outlook.office
 - [x] Schedule redesigned like the reference: Week, Day, Month, mini calendar, holidays on the calendar, manager adds and deletes holidays; manager gets a Schedule menu item
 - [x] Hanbee staff Attendance page; manager performance view (late, absent, high-priority tasks, detail panel) and a Working hours card
 - [x] Lesson reviews and certificates for all roles: Hanbee staff Reviews (Waiting/Verified/All, verify, countdown to the 10-minute automatic unlock) and Certificates (search, verify box); manager read-only versions; school staff Lesson reviews and Certificates tabs on Courses; student Reviews, Certificates and a printable certificate page
-- [ ] Team formation inside a school (students propose, school staff approve, HANBEE verifies): plan agreed in chat, waiting on the owner's answer whether students may start teams; needs a captain, team invitations, min and max team size, and a "proposed" status
+- [x] Team-formation database backend (migrations 0038-0039): school team slots, configurable team size, student captains and invitations, same-school membership, proposal/return/approval flow, synchronized team chat, and role-scoped statistics; covered by `supabase/tests/rls/0039_team_formation.mjs` (58 assertions)
+- [x] Student and school-staff team pages use the team-formation RPCs; solo students can create and submit a paid entry for Hanbee review
 - [x] School staff, Hanbee staff and manager dashboards restyled to match the student template look (revoked invitations hidden behind a toggle; manager Monitor gains Recent sign-ins, one row per person)
 - [x] Demo data for every page of every role (`supabase/tests/seed-demo.mjs` then `seed-demo-full.mjs`), a safe `cleanup-demo.mjs` (dry run by default; `--yes`, `--rollback-test`, `--include-seeded`), and an on-demand `demo-content.spec.ts` (`DEMO_CONTENT=1`) that opens every page for all four roles and screenshots it
 - [ ] Tasks: subtasks (owner has not yet said yes or no)

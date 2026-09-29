@@ -16,7 +16,7 @@ Status: `[ ]` todo, `[~]` in progress, `[x]` done and proven live. Each fix is p
 - [ ] **S5. Seeded test accounts.** `ava@student.edu` and `jamie@hanbeelms.edu` exist live with passwords that are in the repo's test files. Rotate or remove before real users. Decision needed from the owner (tests log in with them).
 - [ ] **S6. Rotate secrets** that were pasted into chat: database password, Gemini API key.
 - [ ] **S7. Public application form.** Add rate limit and CAPTCHA to `course_applications`.
-- [ ] **S8. AI function origin.** Replace `Access-Control-Allow-Origin: *` with the site's real address; add a shared daily cap.
+- [~] **S8. AI function origin and quota.** The Edge Function now uses an exact `ALLOWED_ORIGINS` allow-list; migration 0040 adds an atomic shared daily cap (`GEMINI_DAILY_REQUEST_LIMIT`, default 100), alongside the per-user hourly limit. Still configure the production origins and quota as Supabase secrets, apply migration 0040, and deploy the function.
 - [ ] **S9. Private file storage** when lesson uploads are built: private bucket, signed time-limited links.
 
 ### P2: hardening

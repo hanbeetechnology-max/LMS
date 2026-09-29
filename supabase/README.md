@@ -1,9 +1,12 @@
 # HanbeeLms — Supabase setup
 
-This is fully prepared and ready to apply, but **not yet connected** — nothing
-in the app calls Supabase yet (see `frontend/src/lib/supabaseClient.ts`,
-currently unused). See `docs/PLAN.md` §10.35 for why.
-
+Supabase is HanbeeLms's authoritative authentication and database backend.
+Authorization lives in Postgres RLS policies and security-definer functions; the
+frontend uses only the public anon key. Authentication, course progress,
+certificates, teams, school operations, chat, announcements, staff attendance,
+manager review pages and the AI assistant call Supabase directly. The separate
+`backend/` Express routes are legacy and are not part of this Supabase-only
+architecture.
 ## 1. Create the project
 
 Go to [supabase.com](https://supabase.com) → New Project (free tier is
@@ -12,30 +15,19 @@ anything below, but Supabase asks for it upfront.
 
 ## 2. Apply the schema
 
-Open your project's **SQL Editor** and run these three files **in order**
-(copy-paste each one's contents and hit Run):
+Apply every file in `migrations/` in numeric order. The recommended method is
+the Supabase CLI so migration history stays tracked:
 
-1. `migrations/0001_init.sql` — tables, enums, the profile-creation trigger
-2. `migrations/0002_rls.sql` — Row Level Security policies (the app has no
-   access to anything until these are applied)
-3. `migrations/0003_functions.sql` — attendance heartbeat/finalize RPCs,
-   idempotent certificate issuance, and the public certificate-verify RPC
-4. `migrations/0004_role_signup_security.sql` — role and signup security
-5. `migrations/0005_staff_approval.sql` — staff approval workflow
-6. `migrations/0006_assessments.sql` — `assessments`, questions, options, and
-   the student-safe options view
-7. `migrations/0007_assessment_submissions.sql` — submissions, verification,
-   auto-unlock, and notifications
+```
+supabase link --project-ref <your-project-ref>
+supabase db push
+```
 
-If the app reports that assessment review is unavailable, apply the pending
-migrations to the configured Supabase project with `supabase db push` (or run
-`migrations/0007_assessment_submissions.sql` in the Supabase SQL editor), then
-refresh the app. PostgREST will return 404 until the table migration has been
-applied and its schema cache has refreshed.
-
-(If you'd rather use the Supabase CLI: `supabase link` then `supabase db push`
-picks these up automatically from this folder's naming convention.)
-
+Do not apply only the first few migrations; later migrations add role security,
+tenant isolation, course assessments, chat, tournaments, attendance, and team
+formation. Migration `0040_ai_daily_capacity.sql` adds the shared AI quota used
+by the Edge Function. Migration `0041_solo_tournament_entries.sql` adds the
+solo-student tournament submission path and the Hanbee review queue.
 ## 3. Get your API keys
 
 Project → **Settings → API**:
@@ -58,17 +50,14 @@ This creates the same three demo accounts the app has used all along
 enrollment, one holiday, and one announcement — enough to sanity-check every
 page. It's safe to re-run; it skips accounts that already exist.
 
-## 5. Give me the URL + anon key
+## 5. Configure the frontend
 
-Once steps 1–4 are done, hand me the **Project URL** and **anon key** (the
-service role key stays with you, not in chat) and I'll:
-- Set `frontend/.env.local` from `frontend/.env.example`
-- Wire `AuthProvider`, `AnnouncementsFeed`, attendance, and certificates over
-  to real Supabase calls (replacing the `backend/` FastAPI prototype and the
-  `mockAuth.ts` offline fallback)
-- Re-run the full e2e suite against the real database and fix anything that
-  breaks in the transition
-
+Copy `frontend/.env.example` to `frontend/.env.local` and fill in the Supabase
+Project URL and anon key. Never put the service-role key in the frontend. No
+Supabase project credentials are currently present in this workspace, so live
+authentication and database requests require this setup. Set
+`NEXT_PUBLIC_TOURNAMENT_PAYMENT_QR_URL` in the frontend environment to show the
+hosted payment QR on the solo tournament entry page.
 ## What's in this folder
 
 - `migrations/0001_init.sql` — schema: profiles, courses/sections/modules/
@@ -85,3 +74,18 @@ service role key stays with you, not in chat) and I'll:
 - `seed.mjs` — creates the demo accounts via the Admin API (not raw SQL,
   since seeding `auth.users` directly is fragile across Supabase versions)
   plus a working slice of course/roster/holiday/announcement data.
+
+## AI Assistant deployment settings
+
+The AI Edge Function requires an explicit browser-origin allow-list. Apply
+`migrations/0040_ai_daily_capacity.sql` before deploying it, then set the
+function secrets with your real site origins and Gemini key:
+
+```
+supabase secrets set ALLOWED_ORIGINS="https://your-site.example,https://www.your-site.example" GEMINI_API_KEY="your-key" GEMINI_DAILY_REQUEST_LIMIT="100"
+supabase functions deploy ai-assistant
+```
+
+Add the local development origin to `ALLOWED_ORIGINS` when testing locally.
+The shared daily limit defaults to 100 if `GEMINI_DAILY_REQUEST_LIMIT` is not
+set; choose a limit that fits the provider quota for your project.

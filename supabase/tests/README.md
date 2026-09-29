@@ -25,6 +25,7 @@ Never commit the URL. Use the session pooler (the direct host is IPv6 only). Enc
 | `0016_0021_regressions.mjs` | Role self-promotion, attendance/certificate/time-entry forgery, server-checked lesson completion, gated content, scoped profiles |
 | `0026_chat_v2.mjs` | Who may message whom (27 allowed and 27 refused pairs), school groups, add/remove rules, unread counts, rate limit, forged system messages |
 | `0027_tournaments_teams_applications.mjs` | Tournament visibility, teams, payment claims can never be client-set, leaderboard, course applications and enrollment |
+| `0039_team_formation.mjs` | School team slots, configurable team size, student captains and invitations, same-school membership, proposal/return/approval flow, team chat synchronization, and role-scoped statistics (58 assertions) |
 | `0036_reviews_certificates.mjs` | Lesson reviews and certificates lists: who may see which |
 | `0037_backend_hardening.mjs` | Join link rotation, append-only audit log, masked certificate name, chat history and profile limits, flood caps |
 | `0029_overviews_status_solo.mjs` | Dashboard data functions and who may call them, suspend/close/revoke, solo conversion, joining a new school |
