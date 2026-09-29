@@ -1,42 +1,50 @@
-# Dependencies
+# dependencies
 node_modules/
-frontend/node_modules/
+/.pnp
+.pnp.js
 
-# Build output
-frontend/dist/
-dist/
+# testing
+/coverage
+/test-results/
+/**/test-results/
 
-# Environment / secrets
-frontend/.env.local
-frontend/.env
-.env
-.env.local
+# next.js
+.next/
+/out/
 
-# Test artifacts
-frontend/test-results/
-test-results/
-frontend/.playwright-cli/
-.playwright-cli/
-frontend/playwright-report/
-playwright-report/
+# production
+/build
 
-# Claude Code local state
-.claude/
+# supabase local
+/supabase/.temp/
 
-# Logs
-*.log
-npm-debug.log*
+# tool-local, not part of the product
+/.claude/
+/.playwright-cli/
 
-# OS / editor
+# misc
 .DS_Store
-Thumbs.db
-.vscode/*
-!.vscode/extensions.json
+*.pem
+*.log
 
-# Supabase Edge Function secrets and CLI link state
-supabase/functions/.env
-supabase/.temp/
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Restricted test-database login (local only)
-supabase/tests/.env.test
-supabase/tests/backups/
+# environment variables (DO NOT COMMIT SECRETS)
+.env
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
