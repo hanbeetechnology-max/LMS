@@ -54,8 +54,8 @@ export default function SchoolOverviewPage() {
           </div>
           <section className={styles.sectionCard} style={{ marginBottom: 22 }}>
             <div className={styles.sectionHeader}>
-              <div><span className={styles.metricLabel}>NEXT EVENT</span><h2 className={styles.sectionTitle} style={{ marginTop: 7 }}>{overview.tournament.next_tournament?.title ?? "No upcoming tournament"}</h2></div>
-              <Link href="/dashboard/school/teams" className={styles.actionBtn} style={{ textDecoration: "none" }}>Manage teams <ChevronRight size={16} /></Link>
+              <div style={{ minWidth: 0 }}><span className={styles.metricLabel}>NEXT EVENT</span><h2 className={styles.sectionTitle} style={{ marginTop: 7 }}>{overview.tournament.next_tournament?.title ?? "No upcoming tournament"}</h2></div>
+              <Link href="/dashboard/school/teams" className={styles.actionBtn} style={{ textDecoration: "none", flex: "0 0 auto", whiteSpace: "nowrap" }}>Manage teams <ChevronRight size={16} /></Link>
             </div>
             {overview.tournament.next_tournament ? <div style={{ display: "flex", gap: 20, flexWrap: "wrap", color: "var(--text-muted)" }}><span><CalendarDays size={15} /> {new Date(overview.tournament.next_tournament.starts_at).toLocaleString()}</span>{overview.tournament.next_tournament.venue && <span>{overview.tournament.next_tournament.venue}</span>}</div> : <p style={{ color: "var(--text-muted)" }}>Tournament dates and team rules will show here when an event is announced.</p>}
           </section>
