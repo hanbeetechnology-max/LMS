@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import styles from "../layout.module.css";
 import { getAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
 
@@ -9,7 +9,7 @@ function roleLabel(role: AccountProfile["role"]) {
   return role.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-export default function Header() {
+export default function Header({ onMenuClick, menuOpen }: { onMenuClick: () => void; menuOpen: boolean }) {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [today, setToday] = useState("");
 
@@ -25,6 +25,15 @@ export default function Header() {
 
   return (
     <header className={styles.header}>
+      <button
+        type="button"
+        className={styles.hamburgerBtn}
+        onClick={onMenuClick}
+        aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
       <div className={styles.headerLeft}>
         <div className={styles.greeting}>Welcome back,</div>
         <div className={styles.greetingName}>{profile?.full_name ?? ""}</div>

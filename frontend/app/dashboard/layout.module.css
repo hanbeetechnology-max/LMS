@@ -22,6 +22,12 @@
   transition: background-color 0.5s ease, box-shadow 0.5s ease;
 }
 
+.sidebarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .logo {
   font-family: var(--font-logo);
   font-size: 24px;
@@ -29,6 +35,13 @@
   margin-bottom: 48px;
   padding: 0 12px;
   letter-spacing: 2px;
+}
+
+/* Mobile-only controls: a hamburger in the header opens the sidebar as a
+   drawer, closed by this button, the backdrop, or picking a destination. */
+.hamburgerBtn,
+.sidebarCloseBtn {
+  display: none;
 }
 
 .logoHighlight {
@@ -261,50 +274,86 @@
 }
 
 @media (max-width: 760px) {
-  .dashboardContainer { flex-direction: column; height: 100dvh; }
+  .dashboardContainer { height: 100dvh; }
+
+  /* The sidebar becomes a full-height drawer that slides in from the left,
+     over the content, instead of being squeezed into a horizontal strip. */
   .sidebar {
-    width: 100%;
-    flex: 0 0 auto;
-    padding: 10px 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(82vw, 300px);
+    max-width: 300px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
     border-right: 0;
-    border-bottom: var(--border-subtle);
-    gap: 10px;
+    box-shadow: 0 0 0 1px var(--border-subtle);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 60;
+    overflow-y: auto;
   }
-  .logo { font-size: 17px; margin: 0; padding: 0 4px; white-space: nowrap; }
-  .logoHighlight { display: none; }
-  .modeSwitcherContainer { flex: 0 0 174px; margin: 0; }
-  .navMenu {
-    flex: 1 1 auto;
-    flex-direction: row;
-    gap: 6px;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
+  .sidebarOpen { transform: translateX(0); }
+
+  .mobileBackdrop {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 55;
+    cursor: default;
   }
-  .navLink { flex: 0 0 auto; padding: 9px 11px; font-size: 12px; white-space: nowrap; gap: 7px; }
-  .navIcon { width: 16px; height: 16px; }
-  .userProfile { display: none; }
-  .sidebar > button.navLink { width: auto !important; margin: 0 !important; padding: 9px; }
-  .sidebar > button.navLink { font-size: 0; }
-  .sidebar > button.navLink .navIcon { width: 18px; height: 18px; }
-  .mainArea { min-height: 0; }
-  .header { height: auto; min-height: 62px; padding: 10px 16px; gap: 12px; }
+
+  .sidebarCloseBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--bg-card-hover);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .sidebarCloseBtn .navIcon { width: 18px; height: 18px; }
+  .logo { font-size: 18px; margin: 0; padding: 0 4px; white-space: nowrap; }
+
+  .mainArea { min-height: 0; width: 100%; }
+
+  .hamburgerBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-main);
+    cursor: pointer;
+    margin-right: 8px;
+  }
+  .hamburgerBtn:hover { background: var(--bg-card-hover); }
+
+  .header { height: auto; min-height: 62px; padding: 10px 16px; gap: 10px; }
   .headerLeft { min-width: 0; }
   .greeting { font-size: 10px; }
-  .greetingName { font-size: 13px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .greetingName { font-size: 13px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .searchBar { display: none; }
   .headerRight { gap: 12px; }
-  .date { font-size: 11px; }
+  .date { display: none; }
   .headerUser { gap: 7px; }
   .headerUser .userInfo { display: none; }
   .contentScroll { padding: 20px 14px; }
 }
 
 @media (max-width: 560px) {
-  .sidebar { flex-wrap: wrap; }
-  .logo { flex: 0 0 auto; }
-  .modeSwitcherContainer { margin-left: auto; flex-basis: 160px; }
-  .navMenu { order: 3; flex: 1 0 100%; }
+  .sidebar { width: min(88vw, 300px); }
   .metricsRow { flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
   .metricsRow > * { flex: 1 1 calc(50% - 10px); min-width: 135px; }
   .metricsGrid { grid-template-columns: 1fr; gap: 12px; }
@@ -320,17 +369,21 @@
 }
 
 /* Scrollbar styles */
-.contentScroll::-webkit-scrollbar {
+.contentScroll::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
   width: 6px;
 }
-.contentScroll::-webkit-scrollbar-track {
+.contentScroll::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
   background: transparent;
 }
-.contentScroll::-webkit-scrollbar-thumb {
+.contentScroll::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
 }
-.contentScroll::-webkit-scrollbar-thumb:hover {
+.contentScroll::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
   background: var(--bg-card-hover);
   box-shadow: var(--clay-shadow-elevated);
 }

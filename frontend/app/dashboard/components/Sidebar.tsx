@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, BookOpen, Clock, Bell, Settings, Trophy, Users, MessageSquare, Bot, School, CalendarDays, ClipboardList, UserCheck, LogOut, ClipboardCheck, Activity } from "lucide-react";
+import { LayoutDashboard, BookOpen, Clock, Bell, Settings, Trophy, Users, MessageSquare, Bot, School, CalendarDays, ClipboardList, UserCheck, LogOut, ClipboardCheck, Activity, X } from "lucide-react";
 import styles from "../layout.module.css";
 import ModeSwitcher from "./ModeSwitcher";
 import { getAccountProfile, readStoredSession, signOut, type AccountProfile } from "../../../lib/supabaseAuth";
@@ -72,7 +72,7 @@ function labelRole(role: AccountProfile["role"]) {
   return role.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { mode } = useMode();
   const [profile, setProfile] = useState<AccountProfile | null>(null);
@@ -104,14 +104,19 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
-      <Link href="/" className={styles.logo}>HANBEE <span className={styles.logoHighlight}>LMS × RC</span></Link>
+    <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`}>
+      <div className={styles.sidebarTop}>
+        <Link href="/" className={styles.logo}>HANBEE <span className={styles.logoHighlight}>LMS × RC</span></Link>
+        <button type="button" className={styles.sidebarCloseBtn} onClick={onClose} aria-label="Close navigation">
+          <X className={styles.navIcon} />
+        </button>
+      </div>
       {(!profile || profile.role === "student") && <ModeSwitcher />}
       <nav className={styles.navMenu} aria-label="Dashboard navigation">
         {items.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
           const Icon = item.icon;
-          return <Link key={item.href} href={item.href} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} aria-current={active ? "page" : undefined}><Icon className={styles.navIcon} />{item.name}</Link>;
+          return <Link key={item.href} href={item.href} className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`} aria-current={active ? "page" : undefined} onClick={onClose}><Icon className={styles.navIcon} />{item.name}</Link>;
         })}
       </nav>
       <div className={styles.userProfile}>
