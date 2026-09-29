@@ -1,0 +1,33 @@
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 24px 0 28px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(40, 42, 46, 0.32);
+}
+
+.tabs a {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: rgba(255, 255, 255, 0.58);
+  text-decoration: none;
+  font-size: 13px;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.tabs a:hover { color: #fff; }
+
+.tabs .active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabs a { transition: none; }
+}

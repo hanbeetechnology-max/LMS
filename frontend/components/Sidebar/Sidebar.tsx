@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { readStoredSession, signOut } from "../../lib/supabaseAuth";
 import styles from "./Sidebar.module.css";
 
 const navItems = [
@@ -51,6 +52,16 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
 
+  async function handleSignOut() {
+    try {
+      await signOut(readStoredSession());
+    } catch {
+      // Remove the local session even if the network is unavailable.
+    } finally {
+      window.location.assign("/login");
+    }
+  }
+
   return (
     <aside className={styles.sidebar}>
       <Link href="/" className={styles.logo}>HANBEE</Link>
@@ -72,7 +83,7 @@ export default function Sidebar() {
       </nav>
 
       <div className={styles.footer}>
-        <button className={styles.logout} onClick={() => window.location.href = "/"}>
+        <button className={styles.logout} onClick={() => void handleSignOut()}>
           <span className={styles.icon}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>

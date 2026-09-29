@@ -10,18 +10,10 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Hanbee Backend is running' });
-});
-
-const landingRouter = require('./routes/landing');
-app.use('/api/landing', landingRouter);
-
-const authRouter = require('./routes/auth');
-app.use('/api/auth', authRouter);
-
-const studentRouter = require('./routes/student');
-app.use('/api/student', studentRouter);
+app.use('/api/landing', require('./routes/landing'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/student', require('./routes/student'));
+app.use('/api/hanbee', require('./routes/hanbee'));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

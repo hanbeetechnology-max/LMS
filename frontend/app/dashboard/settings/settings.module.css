@@ -152,6 +152,8 @@
 .toggleSwitch {
   width: 48px;
   height: 26px;
+  padding: 0;
+  border: 0;
   background: var(--bg-card);
   box-shadow: var(--clay-shadow-active);
   border-radius: 13px;

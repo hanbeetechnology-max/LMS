@@ -1,94 +1,74 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import styles from "../dashboard.module.css";
-import { Trophy, Medal, Star } from "lucide-react";
+import { Trophy } from "lucide-react";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
 
-const leaderboardData = [
-  { rank: 1, name: "Team Apex", points: 2450, change: "up", members: 4 },
-  { rank: 2, name: "AeroDynamics", points: 2380, change: "same", members: 5 },
-  { rank: 3, name: "Velocity RC", points: 2120, change: "up", members: 3 },
-  { rank: 4, name: "SkyRiders", points: 1950, change: "down", members: 6 },
-  { rank: 5, name: "Mach 5", points: 1840, change: "same", members: 4 },
-];
+type Tournament = { id: string; title: string; ends_at: string };
+type Result = { team_id: string; team_name: string; school_name: string | null; rank: number; points: number; notes: string };
 
 export default function LeaderboardPage() {
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [results, setResults] = useState<Result[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    async function loadLeaderboard() {
+      try {
+        const events = await authenticatedSupabaseFetch<Tournament[]>("/rest/v1/tournaments?select=id,title,ends_at&status=eq.completed&order=ends_at.desc&limit=1");
+        if (events.length === 0) {
+          if (active) setTournament(null);
+          return;
+        }
+        const event = events[0];
+        const rows = await authenticatedSupabaseFetch<Result[]>("/rest/v1/rpc/get_leaderboard", {
+          method: "POST",
+          body: JSON.stringify({ p_tournament: event.id }),
+        });
+        if (!active) return;
+        setTournament(event);
+        setResults(rows);
+      } catch (reason) {
+        if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the leaderboard.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void loadLeaderboard();
+    return () => { active = false; };
+  }, []);
+
   return (
     <div>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Global Leaderboard</h1>
-        <p className={styles.pageSubtitle}>See how your team stacks up against the competition</p>
+        <h1 className={styles.pageTitle}>Tournament Leaderboard</h1>
+        <p className={styles.pageSubtitle}>{tournament?.title ?? "Official results from completed Hanbee tournaments"}</p>
       </div>
-
-      <div className={styles.metricsRow} style={{ marginBottom: "32px" }}>
-        <div className={styles.metricCard}>
-          <div className={styles.metricCardHeader}>
-            <span className={styles.metricLabel}>Your Team Rank</span>
-            <Trophy size={16} className={styles.metricIcon} style={{ color: "var(--accent)" }} />
-          </div>
-          <div className={styles.metricValue}>#12</div>
-          <div className={styles.metricSubtext}>Top 15% globally</div>
-        </div>
-
-        <div className={styles.metricCard}>
-          <div className={styles.metricCardHeader}>
-            <span className={styles.metricLabel}>Total Points</span>
-            <Star size={16} className={styles.metricIcon} style={{ color: "#fbbf24" }} />
-          </div>
-          <div className={styles.metricValue}>1,240</div>
-          <div className={styles.metricSubtext}>+350 this week</div>
-        </div>
-        
-        <div className={styles.metricCard}>
-          <div className={styles.metricCardHeader}>
-            <span className={styles.metricLabel}>Next Milestone</span>
-            <Medal size={16} className={styles.metricIcon} style={{ color: "#9ca3af" }} />
-          </div>
-          <div className={styles.metricValue}>Silver Tier</div>
-          <div className={styles.metricSubtext}>260 points away</div>
-        </div>
-      </div>
-
-      <div className={styles.sectionCard}>
-        <h2 className={styles.sectionTitle} style={{ marginBottom: "24px" }}>Top Teams</h2>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          {leaderboardData.map((team, index) => (
-            <div 
-              key={index}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "16px 24px",
-                background: index < 3 ? "var(--bg-card-hover)" : "var(--bg-card)",
-                boxShadow: index < 3 ? "var(--clay-shadow-elevated)" : "var(--clay-shadow-outer)",
-                borderRadius: "16px",
-                gap: "24px"
-              }}
-            >
-              <div style={{ 
-                fontSize: "24px", 
-                fontWeight: "600", 
-                color: index === 0 ? "#fbbf24" : index === 1 ? "#9ca3af" : index === 2 ? "#b45309" : "var(--text-muted)",
-                width: "40px",
-                textAlign: "center"
-              }}>
-                #{team.rank}
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "500", marginBottom: "4px" }}>{team.name}</h3>
-                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>{team.members} members</p>
-              </div>
-              
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent)" }}>
-                  {team.points.toLocaleString()} pts
+      {error && <p role="alert">{error}</p>}
+      {loading && <p role="status">Loading tournament results…</p>}
+      {!loading && !error && (!tournament || results.length === 0) && (
+        <div className={styles.sectionCard}><p>No official results have been published yet.</p></div>
+      )}
+      {!loading && !error && results.length > 0 && (
+        <div className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: 24 }}>Final standings</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {results.map((team, index) => (
+              <article key={team.team_id} style={{ display: "flex", alignItems: "center", padding: "16px 24px", background: index < 3 ? "var(--bg-card-hover)" : "var(--bg-card)", boxShadow: index < 3 ? "var(--clay-shadow-elevated)" : "var(--clay-shadow-outer)", borderRadius: 16, gap: 20 }}>
+                <div style={{ fontSize: 24, fontWeight: 600, color: index === 0 ? "#fbbf24" : "var(--text-muted)", width: 48, textAlign: "center" }}>#{team.rank}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 500 }}>{team.team_name}</h3>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{team.school_name ?? "Independent team"}</p>
                 </div>
-              </div>
-            </div>
-          ))}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--accent)", fontWeight: 600 }}><Trophy size={16} /> {team.points.toLocaleString()} pts</div>
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
