@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { Clock, TrendingUp, CheckCircle, AlertTriangle } from "lucide-react";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 type AttendanceDay = { work_date: string; status: string; clock_in: string | null; clock_out: string | null; hours: number | null };
 type StaffTask = { id: string; title: string; priority: string; status: string; due_date: string | null; done: boolean };
@@ -17,11 +18,12 @@ export default function HanbeeOverview() {
   const [data, setData] = useState<HanbeeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const staffId = profile?.role === "staff" ? profile.id : "";
 
   const fetchData = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "staff" || !profile) throw new Error("My Space is available to approved Hanbee staff.");
-    const taskQuery = new URLSearchParams({ select: "id,title,priority,status,due_date,done", staff_id: `eq.${profile.id}`, order: "due_date.asc.nullslast" });
+    if (!staffId) throw new Error("My Space is available to approved Hanbee staff.");
+    const taskQuery = new URLSearchParams({ select: "id,title,priority,status,due_date,done", staff_id: `eq.${staffId}`, order: "due_date.asc.nullslast" });
     const [attendance, tasks] = await Promise.all([
       authenticatedSupabaseFetch<AttendanceDay[]>("/rest/v1/rpc/staff_attendance", { method: "POST", body: JSON.stringify({}) }),
       authenticatedSupabaseFetch<StaffTask[]>(`/rest/v1/staff_tasks?${taskQuery.toString()}`),
@@ -46,9 +48,12 @@ export default function HanbeeOverview() {
       personalTasks: mappedTasks,
       needsAttention: attention ? [{ id: attention.id, message: attention.title }] : [],
     });
-  }, []);
+  }, [staffId]);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load your Hanbee workspace."); setLoading(false); return; }
+    if (!staffId) { setError("My Space is available to approved Hanbee staff."); setLoading(false); return; }
     let mounted = true;
     const load = async (initial: boolean) => {
       if (initial) setLoading(true);
@@ -60,7 +65,7 @@ export default function HanbeeOverview() {
     void load(true);
     const interval = setInterval(() => { void load(false); }, 30000);
     return () => { mounted = false; clearInterval(interval); };
-  }, [fetchData]);
+  }, [profileLoading, profileError, staffId, fetchData]);
   if (loading) return <div className={styles.loadingContainer}>Loading Hanbee Overview...</div>;
   if (error) return <div className={styles.errorContainer}>{error}</div>;
   if (!data) return <div className={styles.emptyState}>No data available</div>;

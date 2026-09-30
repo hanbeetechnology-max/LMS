@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import styles from "./announcements.module.css";
-import { getAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
 import { createAnnouncement, deleteAnnouncement, getAnnouncementAuthors, listAnnouncements, updateAnnouncement, type AnnouncementAudience, type AnnouncementAuthor, type AnnouncementRow } from "../../../lib/announcementsApi";
 
@@ -12,7 +12,7 @@ type AudienceFilter = "all" | "staff" | "student";
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
   const [authors, setAuthors] = useState<Map<string, AnnouncementAuthor>>(new Map());
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile } = useSessionProfile();
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [filter, setFilter] = useState<AudienceFilter>("all");
   const [title, setTitle] = useState("");
@@ -35,15 +35,9 @@ export default function AnnouncementsPage() {
     let active = true;
     async function initialize() {
       try {
-        const account = await getAccountProfile();
-        const [rows, orgId] = await Promise.all([
-          listAnnouncements(),
-          account.role === "school_staff" ? fetchMyOrganizationId() : Promise.resolve(null),
-        ]);
+        const rows = await listAnnouncements();
         const people = await getAnnouncementAuthors([...new Set(rows.map((row) => row.author_id))]);
         if (!active) return;
-        setProfile(account);
-        setOrganizationId(orgId);
         setAnnouncements(rows);
         setAuthors(new Map(people.map((person) => [person.id, person])));
       } catch (reason) {
@@ -55,6 +49,14 @@ export default function AnnouncementsPage() {
     void initialize();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (profile?.role === "school_staff") {
+      fetchMyOrganizationId().then((id) => { if (active) setOrganizationId(id); }).catch(() => undefined);
+    }
+    return () => { active = false; };
+  }, [profile?.role]);
 
   const canPublish = profile?.role === "manager" || profile?.role === "staff" || profile?.role === "school_staff";
   const isSchoolStaff = profile?.role === "school_staff";

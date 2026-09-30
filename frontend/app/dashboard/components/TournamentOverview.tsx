@@ -5,7 +5,7 @@ import { CalendarDays, MapPin, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import styles from "../dashboard.module.css";
 import { fetchUpcomingTournament, fetchMyTeamFormation, type MyTeamFormation, type UpcomingTournament } from "../../../lib/teamFormationApi";
-import { getAccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 export default function TournamentOverview() {
   const [tournament, setTournament] = useState<UpcomingTournament | null>(null);
@@ -14,20 +14,23 @@ export default function TournamentOverview() {
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load tournament information."); setLoading(false); return; }
     let active = true;
     async function loadOverview() {
       try {
-        const [event, profile] = await Promise.all([fetchUpcomingTournament(), getAccountProfile()]);
+        const event = await fetchUpcomingTournament();
         if (!active) return;
         setTournament(event);
-        if (profile.role === "student") setCanManageTeam(true);
-        if (profile.role === "school_staff") {
+        if (profile?.role === "student") setCanManageTeam(true);
+        if (profile?.role === "school_staff") {
           setTeamHref("/dashboard/school/teams");
           setCanManageTeam(true);
         }
-        if (event && profile.role === "student") {
+        if (event && profile?.role === "student") {
           const formation = await fetchMyTeamFormation(event.id);
           if (active) setTeam(formation.my_team);
         }
@@ -39,7 +42,7 @@ export default function TournamentOverview() {
     }
     void loadOverview();
     return () => { active = false; };
-  }, []);
+  }, [profileLoading, profileError, profile?.role]);
 
   return (
     <div>

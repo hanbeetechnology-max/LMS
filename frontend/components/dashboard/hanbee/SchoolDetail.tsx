@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, CheckCircle2, GraduationCap, PauseCircle, PlayCircle, Trophy, Users } from "lucide-react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { fetchSchoolCourseParticipation, fetchSchoolOverview, fetchSchoolStudents, type SchoolCourseRow, type SchoolOverview, type SchoolStudentRow } from "../../../lib/schoolAdminApi";
 import { fetchSchoolTeamOverview, fetchUpcomingTournament, type SchoolTeamOverview, type UpcomingTournament } from "../../../lib/teamFormationApi";
 
@@ -27,10 +28,10 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canView = profile?.role === "manager" || profile?.role === "staff";
 
   const load = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "manager" && profile.role !== "staff") throw new Error("Only approved Hanbee staff can inspect school accounts.");
     const selectedOrg = new URLSearchParams(window.location.search).get("id");
     if (!selectedOrg) throw new Error("No school was selected.");
     const [school, people, participation, event] = await Promise.all([
@@ -46,11 +47,14 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load this school's details."); setLoading(false); return; }
+    if (!canView) { setError("Only approved Hanbee staff can inspect school accounts."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load this school's details."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, canView, load]);
 
   async function act(action: () => Promise<unknown>, success: string) {
     setBusy(true); setError(""); setNotice("");

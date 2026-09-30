@@ -3,7 +3,8 @@
 import { Play, Square } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./attendance.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile, readStoredSession } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch, readStoredSession } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 type AttendanceDay = {
   work_date: string;
@@ -19,9 +20,10 @@ export default function AttendancePage() {
   const [history, setHistory] = useState<AttendanceDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [canAttend, setCanAttend] = useState(false);
   const [error, setError] = useState("");
   const [time, setTime] = useState(new Date());
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canAttend = profile?.role === "staff" || profile?.role === "manager";
 
   const loadAttendance = useCallback(async () => {
     const rows = await authenticatedSupabaseFetch<AttendanceDay[]>("/rest/v1/rpc/staff_attendance", {
@@ -32,18 +34,18 @@ export default function AttendancePage() {
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load attendance."); setLoading(false); return; }
+    if (!canAttend) { setError("Attendance is available to Hanbee staff accounts."); setLoading(false); return; }
     let active = true;
-    getAccountProfile()
-      .then((profile) => {
-        if (profile.role !== "staff" && profile.role !== "manager") throw new Error("Attendance is available to Hanbee staff accounts.");
-        if (active) setCanAttend(true);
-        return loadAttendance();
-      })
-      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load attendance."); })
-      .finally(() => { if (active) setLoading(false); });
+    loadAttendance().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load attendance."); }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [profileLoading, profileError, canAttend, loadAttendance]);
+
+  useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => { active = false; clearInterval(timer); };
-  }, [loadAttendance]);
+    return () => clearInterval(timer);
+  }, []);
 
   const today = history.find((row) => row.work_date === new Date().toISOString().slice(0, 10));
   const isClockedIn = Boolean(today?.clock_in && !today.clock_out);

@@ -2,13 +2,15 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "../../dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 
 type Task = { id: string; title: string; description: string; priority: "low" | "medium" | "high"; status: "todo" | "in_progress" | "done"; due_date: string | null; staff_id: string; created_at: string };
 
 export default function ManagerTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [managerId, setManagerId] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const managerId = profile?.role === "manager" ? profile.id : "";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -19,20 +21,20 @@ export default function ManagerTasksPage() {
   const [message, setMessage] = useState("");
 
   const load = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "manager") throw new Error("Only the manager can view personal manager tasks.");
-    const query = new URLSearchParams({ select: "id,title,description,priority,status,due_date,staff_id,created_at", staff_id: `eq.${profile.id}`, order: "due_date.asc.nullslast,created_at.desc" });
+    const query = new URLSearchParams({ select: "id,title,description,priority,status,due_date,staff_id,created_at", staff_id: `eq.${managerId}`, order: "due_date.asc.nullslast,created_at.desc" });
     const rows = await authenticatedSupabaseFetch<Task[]>(`/rest/v1/staff_tasks?${query.toString()}`);
-    setManagerId(profile.id);
     setTasks(rows);
-  }, []);
+  }, [managerId]);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load your tasks."); setLoading(false); return; }
+    if (!managerId) { setError("Only the manager can view personal manager tasks."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load your tasks."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, managerId, load]);
 
   async function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

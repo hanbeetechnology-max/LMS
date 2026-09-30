@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { getAccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { decideTournamentApplication, fetchTournamentApplicationQueue, type TournamentApplication } from "../../../lib/teamFormationApi";
 
 export default function TournamentReviewQueue() {
@@ -11,13 +11,13 @@ export default function TournamentReviewQueue() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canReview = profile?.role === "staff" || profile?.role === "manager";
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const profile = await getAccountProfile();
-      if (profile.role !== "staff" && profile.role !== "manager") throw new Error("Only Hanbee staff and managers can review tournament entries.");
       setRows(await fetchTournamentApplicationQueue());
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "We couldn't load tournament entries.");
@@ -26,7 +26,12 @@ export default function TournamentReviewQueue() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load tournament entries."); setLoading(false); return; }
+    if (!canReview) { setError("Only Hanbee staff and managers can review tournament entries."); setLoading(false); return; }
+    void load();
+  }, [profileLoading, profileError, canReview, load]);
 
   async function decide(row: TournamentApplication, decision: "verified" | "rejected") {
     setBusyId(row.team_id);

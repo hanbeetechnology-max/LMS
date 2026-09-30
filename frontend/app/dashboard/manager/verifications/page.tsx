@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import styles from "../../dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 
 type StaffApplication = { id: string; full_name: string; email: string; role: "staff"; created_at: string };
 type SchoolApplication = { id: string; name: string; registration_no: string; official_email: string; created_by: string; created_at: string };
@@ -19,12 +20,10 @@ export default function ManagerVerificationsPage() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [isManager, setIsManager] = useState(false);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const isManager = profile?.role === "manager";
 
   const loadQueue = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "manager") throw new Error("Only a Hanbee manager can review applications.");
-    setIsManager(true);
     const [staffRows, schoolRows] = await Promise.all([
       authenticatedSupabaseFetch<StaffApplication[]>("/rest/v1/profiles?select=id,full_name,email,role,created_at&role=eq.staff&approved=eq.false&account_status=eq.active&order=created_at.asc"),
       authenticatedSupabaseFetch<SchoolApplication[]>("/rest/v1/organizations?select=id,name,registration_no,official_email,created_by,created_at&status=eq.pending&order=created_at.asc"),
@@ -34,11 +33,14 @@ export default function ManagerVerificationsPage() {
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the review queue."); setLoading(false); return; }
+    if (!isManager) { setLoading(false); return; }
     let active = true;
     loadQueue().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the review queue."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [loadQueue]);
+  }, [profileLoading, profileError, isManager, loadQueue]);
 
   async function reviewStaff(application: StaffApplication, approve: boolean) {
     setBusyId(application.id);

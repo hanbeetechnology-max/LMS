@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Bell, BookOpen, Building2, CircleAlert, Clock3, Flag, Users } from "lucide-react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { fetchSchoolDirectory, type SchoolDirectoryRow } from "../../../lib/schoolAdminApi";
 
 type TournamentStats = { tournaments?: Record<string, number>; teams?: Record<string, number>; schools_with_teams?: number; solo_teams?: number; participants?: number; teams_awaiting_decision?: number };
@@ -21,12 +22,15 @@ export default function ManagerDashboard() {
   const [staffApplications, setStaffApplications] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const isManager = profile?.role === "manager";
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the manager dashboard."); setLoading(false); return; }
+    if (!isManager) { setError("The manager monitor is available to the Hanbee manager."); setLoading(false); return; }
     let active = true;
     async function load() {
-      const profile = await getAccountProfile();
-      if (profile.role !== "manager") throw new Error("The manager monitor is available to the Hanbee manager.");
       const [tournamentStats, lmsStats, schoolRows, staffRows, pendingStaff] = await Promise.all([
         rpc<TournamentStats>("site_tournament_overview"),
         rpc<LmsStats>("site_lms_overview"),
@@ -40,7 +44,7 @@ export default function ManagerDashboard() {
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the manager dashboard."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [profileLoading, profileError, isManager]);
 
   const pendingSchools = schools.filter((school) => school.status === "pending").length;
   const activeCourses = lms?.courses?.published ?? 0;

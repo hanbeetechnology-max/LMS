@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 type OverviewData = Record<string, unknown>;
 const sectionLabels: Record<string, string> = { site_lms_overview: "Learning platform", site_tournament_overview: "Tournament platform" };
@@ -12,19 +13,22 @@ export default function PlatformOverview({ functions, title }: { functions: stri
   const [data, setData] = useState<Record<string, OverviewData>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canView = profile?.role === "staff" || profile?.role === "manager";
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the platform overview."); setLoading(false); return; }
+    if (!canView) { setError("This overview is for approved Hanbee staff."); setLoading(false); return; }
     let active = true;
     async function load() {
-      const profile = await getAccountProfile();
-      if (profile.role !== "staff" && profile.role !== "manager") throw new Error("This overview is for approved Hanbee staff.");
       const results = await Promise.all(functionKey.split(",").map(async (name) => [name, await authenticatedSupabaseFetch<OverviewData>(`/rest/v1/rpc/${name}`, { method: "POST", body: "{}" })] as const));
       if (active) setData(Object.fromEntries(results));
     }
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the platform overview."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [functionKey]);
+  }, [functionKey, profileLoading, profileError, canView]);
 
   return (
     <div>

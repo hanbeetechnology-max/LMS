@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { authenticatedSupabaseFetch, getAccountProfile, type AccountProfile } from "../../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 import { Input, Select } from "../../../../components/ui/FormField";
 import Shimmer from "../../../../components/ui/Shimmer";
 import styles from "../../dashboard.module.css";
@@ -10,7 +11,7 @@ type CalendarEvent = { id: string; title: string; event_type: "class_session" | 
 
 export default function HanbeeSchedulePage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [eventType, setEventType] = useState<CalendarEvent["event_type"]>("other");
@@ -28,13 +29,15 @@ export default function HanbeeSchedulePage() {
     setEvents(rows);
   }
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the schedule."); setLoading(false); return; }
     let active = true;
-    Promise.all([getAccountProfile(), authenticatedSupabaseFetch<CalendarEvent[]>("/rest/v1/calendar_events?select=id,title,event_type,location,starts_at,ends_at,section_id&order=starts_at.asc")])
-      .then(([account, rows]) => { if (active) { setProfile(account); setEvents(rows); } })
+    loadEvents()
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the schedule."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileLoading, profileError]);
 
   async function createEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

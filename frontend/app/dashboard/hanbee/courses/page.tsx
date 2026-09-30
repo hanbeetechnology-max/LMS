@@ -5,12 +5,13 @@ import Link from "next/link";
 import styles from "../../dashboard.module.css";
 import { Input, Textarea } from "../../../../components/ui/FormField";
 import Shimmer from "../../../../components/ui/Shimmer";
-import { authenticatedSupabaseFetch, getAccountProfile, type AccountProfile } from "../../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 
 type Course = { id: string; title: string; description: string; status: "draft" | "published" | "archived"; cover_accent: string; created_at: string };
 export default function HanbeeCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,18 +21,18 @@ export default function HanbeeCoursesPage() {
   const canManage = profile?.role === "staff" || profile?.role === "manager";
 
   const load = useCallback(async () => {
-    const account = await getAccountProfile();
-    if (account.role !== "staff" && account.role !== "manager") throw new Error("Only approved Hanbee staff can manage the course catalog.");
     const rows = await authenticatedSupabaseFetch<Course[]>("/rest/v1/courses?select=id,title,description,status,cover_accent,created_at&order=created_at.desc");
-    setProfile(account);
     setCourses(rows);
   }, []);
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load courses."); setLoading(false); return; }
+    if (!canManage) { setError("Only approved Hanbee staff can manage the course catalog."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load courses."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, canManage, load]);
 
   async function createCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

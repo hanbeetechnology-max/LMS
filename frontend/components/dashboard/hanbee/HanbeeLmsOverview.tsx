@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Activity, BookOpen, ClipboardList, GraduationCap, School, Users } from "lucide-react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 type Overview = {
   courses?: Record<string, number>;
@@ -23,19 +24,20 @@ export default function HanbeeLmsOverview() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canView = profile?.role === "staff" || profile?.role === "manager";
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the learning overview."); setLoading(false); return; }
+    if (!canView) { setError("This overview is for approved Hanbee staff."); setLoading(false); return; }
     let active = true;
-    async function load() {
-      const profile = await getAccountProfile();
-      if (profile.role !== "staff" && profile.role !== "manager") throw new Error("This overview is for approved Hanbee staff.");
-      const data = await authenticatedSupabaseFetch<Overview>("/rest/v1/rpc/site_lms_overview", { method: "POST", body: "{}" });
-      if (active) setOverview(data);
-    }
-    load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the learning overview."); })
+    authenticatedSupabaseFetch<Overview>("/rest/v1/rpc/site_lms_overview", { method: "POST", body: "{}" })
+      .then((data) => { if (active) setOverview(data); })
+      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the learning overview."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [profileLoading, profileError, canView]);
 
   const courses = overview?.courses ?? {};
   const schools = overview?.schools ?? {};

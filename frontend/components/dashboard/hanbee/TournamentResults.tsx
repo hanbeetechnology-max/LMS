@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
-import { getAccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { listTournamentResults, listTournaments, listVerifiedTournamentTeams, removeTournamentResult, saveTournamentResult, type TournamentRecord, type TournamentResult, type VerifiedTournamentTeam } from "../../../lib/tournamentAdminApi";
 
 export default function TournamentResults() {
@@ -17,10 +17,10 @@ export default function TournamentResults() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canManage = profile?.role === "staff" || profile?.role === "manager";
 
   const load = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "staff" && profile.role !== "manager") throw new Error("Only Hanbee staff and managers can manage results.");
     const [events, verifiedTeams, savedResults] = await Promise.all([listTournaments(), listVerifiedTournamentTeams(), listTournamentResults()]);
     setTournaments(events);
     setTeams(verifiedTeams);
@@ -28,11 +28,14 @@ export default function TournamentResults() {
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load tournament results."); setLoading(false); return; }
+    if (!canManage) { setError("Only Hanbee staff and managers can manage results."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load tournament results."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, canManage, load]);
 
   const tournamentById = useMemo(() => new Map(tournaments.map((item) => [item.id, item])), [tournaments]);
   const teamById = useMemo(() => new Map(teams.map((item) => [item.id, item])), [teams]);

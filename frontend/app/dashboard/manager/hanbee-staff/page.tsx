@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import styles from "../../dashboard.module.css";
-import { authenticatedSupabaseFetch, getAccountProfile } from "../../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 
 type StaffRow = { staff_id: string; full_name: string; email: string; approved: boolean; account_status: string; hours_last_7_days: number; days_worked_last_30: number; late_days_last_30: number; absent_days_last_30: number; open_tasks: number; high_priority_open: number; done_tasks: number; last_clock_in: string | null };
 async function rpc<T>(name: string, args: Record<string, unknown>) { return authenticatedSupabaseFetch<T>(`/rest/v1/rpc/${name}`, { method: "POST", body: JSON.stringify(args) }); }
@@ -12,20 +13,23 @@ export default function ManagerHanbeeStaffPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const isManager = profile?.role === "manager";
 
   const load = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "manager") throw new Error("Only the manager can manage Hanbee staff accounts.");
     const rows = await rpc<StaffRow[]>("hanbee_staff_overview", {});
     setStaff(rows);
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load Hanbee staff."); setLoading(false); return; }
+    if (!isManager) { setError("Only the manager can manage Hanbee staff accounts."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load Hanbee staff."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, isManager, load]);
 
   async function toggleAccess(row: StaffRow) {
     setBusyId(row.staff_id);

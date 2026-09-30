@@ -4,7 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { Input, Select } from "../../ui/FormField";
 import Shimmer from "../../ui/Shimmer";
-import { authenticatedSupabaseFetch, getAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
+import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
 
 type CalendarEvent = { id: string; title: string; event_type: string; location: string; starts_at: string; ends_at: string; section_id: string | null; org_id: string | null; owner_id: string | null };
@@ -26,7 +27,7 @@ function rangeEnd(range: Range) {
 
 export default function SchoolSchedule() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [range, setRange] = useState<Range>("week");
   const [scope, setScope] = useState<"all" | "school" | "personal">("all");
@@ -42,18 +43,19 @@ export default function SchoolSchedule() {
   const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load the school schedule."); setLoading(false); return; }
     let active = true;
     Promise.all([
-      getAccountProfile(),
       fetchMyOrganizationId(),
       authenticatedSupabaseFetch<CalendarEvent[]>("/rest/v1/calendar_events?select=id,title,event_type,location,starts_at,ends_at,section_id,org_id,owner_id&order=starts_at.asc"),
-    ]).then(([account, orgId, rows]) => {
+    ]).then(([orgId, rows]) => {
       if (!active) return;
-      setProfile(account); setOrganizationId(orgId); setEvents(rows);
+      setOrganizationId(orgId); setEvents(rows);
     }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load the school schedule."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [profileLoading, profileError]);
 
   const visibleEvents = useMemo(() => {
     const start = rangeStart(range); const end = rangeEnd(range);

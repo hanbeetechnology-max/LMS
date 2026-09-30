@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { Input, Textarea, Select } from "../../ui/FormField";
-import { getAccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { createTournament, listTournaments, updateTournament, type TournamentRecord, type TournamentStatus } from "../../../lib/tournamentAdminApi";
 
 type TournamentForm = { title: string; description: string; startsAt: string; endsAt: string; venue: string; status: TournamentStatus };
@@ -22,19 +22,22 @@ export default function TournamentManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const canManage = profile?.role === "staff" || profile?.role === "manager";
 
   const load = useCallback(async () => {
-    const profile = await getAccountProfile();
-    if (profile.role !== "staff" && profile.role !== "manager") throw new Error("Only Hanbee staff and managers can manage tournaments.");
     setTournaments(await listTournaments());
   }, []);
 
   useEffect(() => {
+    if (profileLoading) return;
+    if (profileError) { setError(profileError instanceof Error ? profileError.message : "We couldn't load tournaments."); setLoading(false); return; }
+    if (!canManage) { setError("Only Hanbee staff and managers can manage tournaments."); setLoading(false); return; }
     let active = true;
     load().catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load tournaments."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [load]);
+  }, [profileLoading, profileError, canManage, load]);
 
   function edit(row: TournamentRecord) {
     setEditingId(row.id);
