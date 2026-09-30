@@ -41,7 +41,10 @@ async function rpc<T>(name: string, args: Record<string, unknown> = {}) {
   return authenticatedSupabaseFetch<T>(`/rest/v1/rpc/${name}`, { method: "POST", body: JSON.stringify(args) });
 }
 
-export const fetchSchoolDirectory = () => rpc<SchoolDirectoryRow[]>("school_directory");
+export const fetchSchoolDirectory = (search: string, limit: number, offset: number) =>
+  rpc<SchoolDirectoryRow[]>("school_directory", { p_search: search || null, p_limit: limit, p_offset: offset });
+export const fetchSchoolDirectoryCount = (search: string) =>
+  rpc<number>("school_directory_count", { p_search: search || null });
 export const fetchSchoolOverview = (orgId: string) => rpc<SchoolOverview>("school_overview", { p_org: orgId });
 export const fetchSchoolStudents = (orgId: string) => rpc<SchoolStudentRow[]>("school_students", { p_org: orgId });
 export const fetchSchoolCourseParticipation = (orgId: string) => rpc<SchoolCourseRow[]>("school_course_participation", { p_org: orgId });

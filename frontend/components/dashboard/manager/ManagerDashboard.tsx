@@ -30,7 +30,7 @@ export default function ManagerDashboard() {
       const [tournamentStats, lmsStats, schoolRows, staffRows, pendingStaff] = await Promise.all([
         rpc<TournamentStats>("site_tournament_overview"),
         rpc<LmsStats>("site_lms_overview"),
-        fetchSchoolDirectory(),
+        fetchSchoolDirectory("", 200, 0), // summary widget: counts only, not a paginated list
         rpc<StaffStats[]>("hanbee_staff_overview"),
         authenticatedSupabaseFetch<Array<{ id: string }>>("/rest/v1/profiles?select=id&role=eq.staff&approved=eq.false&account_status=eq.active"),
       ]);
