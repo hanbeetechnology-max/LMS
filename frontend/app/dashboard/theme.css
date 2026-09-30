@@ -8,20 +8,20 @@
   --accent: #60a5fa;
   
   /* Classic Dark Neumorphism */
-  --clay-shadow-subtle: 2px 2px 5px rgba(0, 0, 0, 0.2), -1px -1px 3px rgba(255, 255, 255, 0.02);
-  --clay-shadow-outer: 5px 5px 12px rgba(0, 0, 0, 0.45), -3px -3px 8px rgba(255, 255, 255, 0.03);
+  --clay-shadow-subtle: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 2px rgba(255, 255, 255, 0.02);
+  --clay-shadow-outer: 3px 3px 8px rgba(0, 0, 0, 0.35), -2px -2px 5px rgba(255, 255, 255, 0.03);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 10px 10px 20px rgba(0, 0, 0, 0.5), -5px -5px 12px rgba(255, 255, 255, 0.04);
-  
+  --clay-shadow-elevated: 6px 6px 14px rgba(0, 0, 0, 0.4), -3px -3px 10px rgba(255, 255, 255, 0.04);
+
   /* Buttons and Active States */
-  --clay-shadow-button: 3px 3px 8px rgba(0, 0, 0, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.04);
-  --clay-shadow-active: inset 3px 3px 6px rgba(0, 0, 0, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.04);
-  
+  --clay-shadow-button: 2px 2px 5px rgba(0, 0, 0, 0.35), -1px -1px 3px rgba(255, 255, 255, 0.03);
+  --clay-shadow-active: inset 2px 2px 4px rgba(0, 0, 0, 0.35), inset -1px -1px 3px rgba(255, 255, 255, 0.03);
+
   --clay-radius-lg: 32px;
   --clay-radius-md: 24px;
   --clay-radius-sm: 16px;
-  
-  --border-subtle: none;
+
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] {
@@ -34,16 +34,16 @@
   --accent: #3b82f6;
   
   /* Classic Light Neumorphism */
-  --clay-shadow-subtle: 2px 2px 5px rgba(163, 177, 198, 0.25), -2px -2px 5px rgba(255, 255, 255, 0.6);
-  --clay-shadow-outer: 5px 5px 12px rgba(163, 177, 198, 0.4), -4px -4px 10px rgba(255, 255, 255, 0.8);
+  --clay-shadow-subtle: 1px 1px 3px rgba(163, 177, 198, 0.2), -1px -1px 3px rgba(255, 255, 255, 0.5);
+  --clay-shadow-outer: 3px 3px 8px rgba(163, 177, 198, 0.3), -3px -3px 7px rgba(255, 255, 255, 0.7);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 10px 10px 20px rgba(163, 177, 198, 0.45), -6px -6px 16px rgba(255, 255, 255, 0.9);
-  
+  --clay-shadow-elevated: 6px 6px 14px rgba(163, 177, 198, 0.35), -4px -4px 10px rgba(255, 255, 255, 0.8);
+
   /* Buttons and Active States */
-  --clay-shadow-button: 3px 3px 8px rgba(163, 177, 198, 0.5), -2px -2px 6px rgba(255, 255, 255, 0.9);
-  --clay-shadow-active: inset 3px 3px 6px rgba(163, 177, 198, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
-  
-  --border-subtle: none;
+  --clay-shadow-button: 2px 2px 5px rgba(163, 177, 198, 0.35), -1px -1px 4px rgba(255, 255, 255, 0.7);
+  --clay-shadow-active: inset 2px 2px 4px rgba(163, 177, 198, 0.35), inset -1px -1px 3px rgba(255, 255, 255, 0.7);
+
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="personalized"] {
@@ -60,18 +60,18 @@
   --accent: hsl(var(--user-hue, 215), 90%, clamp(20%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%));
   
   /* Personalized Neumorphism Shadows that adapt to background lightness */
-  --shadow-dark: hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) - 18%), 0.6);
-  --shadow-light: hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) + 15%), 0.9);
-  
-  --clay-shadow-subtle: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
-  --clay-shadow-outer: 5px 5px 12px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  --shadow-dark: hsla(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 14%), 0.35);
+  --shadow-light: hsla(var(--user-hue, 215), 50%, calc(var(--user-lightness, 85%) + 13%), 0.6);
+
+  --clay-shadow-subtle: 1px 1px 3px var(--shadow-dark), -1px -1px 3px var(--shadow-light);
+  --clay-shadow-outer: 3px 3px 8px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 10px 10px 20px hsla(var(--user-hue, 215), 60%, calc(var(--user-lightness, 85%) - 25%), 0.6), -6px -6px 16px var(--shadow-light);
-  
-  --clay-shadow-button: 3px 3px 8px var(--shadow-dark), -2px -2px 6px var(--shadow-light);
-  --clay-shadow-active: inset 3px 3px 6px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
-  
-  --border-subtle: none;
+  --clay-shadow-elevated: 6px 6px 14px hsla(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 20%), 0.4), -4px -4px 10px var(--shadow-light);
+
+  --clay-shadow-button: 2px 2px 5px var(--shadow-dark), -1px -1px 4px var(--shadow-light);
+  --clay-shadow-active: inset 2px 2px 4px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light);
+
+  --border-subtle: 1px solid hsla(var(--user-hue, 215), 40%, calc(var(--user-lightness, 85%) - 20%), 0.1);
 }
 
 /* Base resets */
