@@ -1,7 +1,11 @@
-﻿"use client";
+"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import styles from "../../../app/dashboard/dashboard.module.css";
+import { Input, Textarea } from "../../ui/FormField";
+import Shimmer from "../../ui/Shimmer";
 import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
 import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
 import { fetchSchoolStudents, type SchoolStudentRow } from "../../../lib/schoolAdminApi";
@@ -14,97 +18,82 @@ async function rpc<T>(name: string, args: Record<string, unknown>) {
 }
 
 export default function SchoolStudents() {
-  const [orgId, setOrgId] = useState("");
-  const [joinToken, setJoinToken] = useState("");
-  const [students, setStudents] = useState<SchoolStudentRow[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [inviteSearch, setInviteSearch] = useState("");
   const [emails, setEmails] = useState("");
   const [mailRecipients, setMailRecipients] = useState<string[]>([]);
   const [mailStatus, setMailStatus] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const queryClient = useQueryClient();
 
-  async function load(id: string) {
-    const [people, invites] = await Promise.all([
-      fetchSchoolStudents(id),
-      authenticatedSupabaseFetch<Invitation[]>(`/rest/v1/invitations?select=id,email,token,expires_at,accepted,revoked_at&org_id=eq.${id}&role=eq.student&order=created_at.desc`),
-    ]);
-    setStudents(people);
-    setInvitations(invites);
-  }
+  const { data: orgId } = useQuery({ queryKey: ["my-org-id"], queryFn: fetchMyOrganizationId });
 
-  useEffect(() => {
-    let active = true;
-    fetchMyOrganizationId().then(async (id) => {
-      if (!id) throw new Error("Your account is not linked to an active school.");
-      const params = new URLSearchParams({ select: "join_token", id: `eq.${id}`, limit: "1" });
+  const { data: joinToken } = useQuery({
+    queryKey: ["school-join-token", orgId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ select: "join_token", id: `eq.${orgId}`, limit: "1" });
       const orgs = await authenticatedSupabaseFetch<Array<{ join_token: string }>>(`/rest/v1/organizations?${params}`);
-      await load(id);
-      if (active) {
-        setOrgId(id);
-        setJoinToken(orgs[0]?.join_token ?? "");
-      }
-    }).catch((reason: unknown) => {
-      if (active) setError(reason instanceof Error ? reason.message : "We couldn't load school students.");
-    }).finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => { active = false; };
-  }, []);
+      return orgs[0]?.join_token ?? "";
+    },
+    enabled: Boolean(orgId),
+  });
 
-  async function invite(event: FormEvent<HTMLFormElement>) {
+  const { data: students, isLoading: studentsLoading, error: studentsError } = useQuery({
+    queryKey: ["school-students", orgId],
+    queryFn: () => fetchSchoolStudents(orgId as string),
+    enabled: Boolean(orgId),
+  });
+
+  const { data: invitations, isLoading: invitesLoading } = useQuery({
+    queryKey: ["school-invitations", orgId],
+    queryFn: () => authenticatedSupabaseFetch<Invitation[]>(`/rest/v1/invitations?select=id,email,token,expires_at,accepted,revoked_at&org_id=eq.${orgId}&role=eq.student&order=created_at.desc`),
+    enabled: Boolean(orgId),
+  });
+
+  const invalidateRoster = () => {
+    queryClient.invalidateQueries({ queryKey: ["school-students", orgId] });
+    queryClient.invalidateQueries({ queryKey: ["school-invitations", orgId] });
+  };
+
+  const invite = useMutation({
+    mutationFn: (list: string[]) => rpc<InviteResult[]>("invite_students", { p_org: orgId, p_emails: list }),
+    onSuccess: (result) => {
+      setMailRecipients(result.filter((row) => ["invited", "already_invited"].includes(row.result)).map((row) => row.email));
+      setMailStatus("");
+      setEmails("");
+      invalidateRoster();
+    },
+  });
+
+  const revoke = useMutation({
+    mutationFn: (invitation: Invitation) => rpc("revoke_invitation", { p_invitation: invitation.id }),
+    onSuccess: invalidateRoster,
+  });
+
+  const rotateLink = useMutation({
+    mutationFn: () => rpc<string>("rotate_school_join_link", { p_org: orgId }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["school-join-token", orgId] }),
+  });
+
+  function handleInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!orgId) return;
     const list = [...new Set(emails.split(/[\s,;]+/).map((value) => value.trim()).filter(Boolean))];
     if (!list.length) return;
-    if (list.length > 200) { setError("Invite up to 200 students at a time."); return; }
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const result = await rpc<InviteResult[]>("invite_students", { p_org: orgId, p_emails: list });
-      setMessage(result.map((row) => `${row.email}: ${row.result.replaceAll("_", " ")}`).join(" · "));
-      setMailRecipients(result.filter((row) => ["invited", "already_invited"].includes(row.result)).map((row) => row.email));
-      setMailStatus("");
-      setEmails("");
-      await load(orgId);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We couldn't send invitations.");
-    } finally {
-      setBusy(false);
-    }
+    if (list.length > 200) return;
+    invite.mutate(list);
   }
 
-  async function revoke(invitation: Invitation) {
-    setBusy(true);
-    setError("");
-    try {
-      await rpc("revoke_invitation", { p_invitation: invitation.id });
-      await load(orgId);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We couldn't revoke this invitation.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const filteredStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return students ?? [];
+    return (students ?? []).filter((s) => s.full_name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query));
+  }, [students, studentSearch]);
 
-  async function rotateSchoolLink() {
-    if (!orgId) return;
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      const nextToken = await rpc<string>("rotate_school_join_link", { p_org: orgId });
-      setJoinToken(nextToken);
-      setMessage("School join link replaced. The previous link no longer works.");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We couldn't replace the school join link.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const filteredInvitations = useMemo(() => {
+    const query = inviteSearch.trim().toLowerCase();
+    if (!query) return invitations ?? [];
+    return (invitations ?? []).filter((i) => i.email.toLowerCase().includes(query));
+  }, [invitations, inviteSearch]);
 
   const inviteUrl = (invitation: Invitation) => `${typeof window !== "undefined" ? window.location.origin : ""}/signup?invite_token=${encodeURIComponent(invitation.token)}&email=${encodeURIComponent(invitation.email)}`;
   const schoolSignupUrl = typeof window !== "undefined" && joinToken ? `${window.location.origin}/signup?join_token=${encodeURIComponent(joinToken)}` : "";
@@ -131,19 +120,26 @@ export default function SchoolStudents() {
     }
   }
 
+  const busy = invite.isPending || revoke.isPending || rotateLink.isPending;
+
   return (
     <div>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Students</h1>
         <p className={styles.pageSubtitle}>School roster, course progress, and secure student invitations</p>
       </div>
-      {error && <p role="alert">{error}</p>}
-      {message && <p role="status">{message}</p>}
-      <form className={styles.sectionCard} onSubmit={invite} style={{ marginBottom: 24 }}>
+      {(studentsError || invite.isError || revoke.isError || rotateLink.isError) && (
+        <p role="alert">{[studentsError, invite.error, revoke.error, rotateLink.error].find(Boolean) instanceof Error
+          ? ([studentsError, invite.error, revoke.error, rotateLink.error].find(Boolean) as Error).message
+          : "Something went wrong."}</p>
+      )}
+      {invite.isSuccess && <p role="status">{invite.data.map((row) => `${row.email}: ${row.result.replaceAll("_", " ")}`).join(" · ")}</p>}
+      {rotateLink.isSuccess && <p role="status">School join link replaced. The previous link no longer works.</p>}
+      <form className={styles.sectionCard} onSubmit={handleInvite} style={{ marginBottom: 24 }}>
         <h2 className={styles.sectionTitle}>Invite students</h2>
         <p style={{ marginTop: 8, color: "var(--text-muted)" }}>Enter one or more email addresses separated by commas, spaces, or new lines. Students with an existing Hanbee account can sign in and join using the school link below.</p>
-        <textarea value={emails} onChange={(event) => setEmails(event.target.value)} rows={3} maxLength={20000} style={{ width: "100%", marginTop: 12 }} placeholder="student@example.com" />
-        <button className={styles.actionBtn} type="submit" disabled={busy || loading} style={{ marginTop: 12 }}>{busy ? "Sending…" : "Send invitations"}</button>
+        <Textarea value={emails} onChange={(event) => setEmails(event.target.value)} rows={3} maxLength={20000} style={{ width: "100%", marginTop: 12 }} placeholder="student@example.com" />
+        <button className={styles.actionBtn} type="submit" disabled={busy || studentsLoading} style={{ marginTop: 12 }}>{invite.isPending ? "Sending…" : "Send invitations"}</button>
         {mailBatches.length > 0 && schoolSignupUrl && <div style={{ marginTop: 18, padding: 16, border: "1px solid var(--border-subtle)", borderRadius: 12 }}>
           <h3 style={{ fontSize: 15 }}>Email invitations</h3>
           <p style={{ margin: "7px 0 12px", color: "var(--text-muted)" }}>Open a draft for each group of up to 40 students, add your own address to To or Cc, then send it from your mail app.</p>
@@ -154,33 +150,41 @@ export default function SchoolStudents() {
         {joinToken && <div style={{ marginTop: 16, padding: 14, border: "1px solid var(--border-subtle)", borderRadius: 12 }}>
           <h3 style={{ fontSize: 15, marginBottom: 8 }}>Your school's join link</h3>
           <a href={schoolSignupUrl}>Open student sign-up link</a> · <a href={schoolJoinUrl}>Existing account join page</a>
-          <p style={{ marginTop: 8, overflowWrap: "anywhere", color: "var(--text-muted)" }}>{typeof window !== "undefined" ? `${window.location.origin}/dashboard/join-school?join_token=${encodeURIComponent(joinToken)}` : ""}</p>
-          <button className={styles.actionBtn} type="button" disabled={busy} onClick={() => void rotateSchoolLink()}>Replace school link</button>
+          <p style={{ marginTop: 8, overflowWrap: "anywhere", color: "var(--text-muted)" }}>{schoolJoinUrl}</p>
+          <button className={styles.actionBtn} type="button" disabled={busy} onClick={() => rotateLink.mutate()}>Replace school link</button>
           <p style={{ marginTop: 6, color: "var(--text-muted)" }}>Replacing this link immediately invalidates copies of the previous link.</p>
         </div>}
       </form>
-      {loading ? <p role="status">Loading student data…</p> : <>
-        <section className={styles.sectionCard}>
-          <h2 className={styles.sectionTitle}>Active students ({students.length})</h2>
-          <div className={styles.tableContainer} style={{ marginTop: 14 }}>
-            <table className={styles.dataTable}><thead><tr><th>Student</th><th>Team</th><th>Courses</th><th>Lessons</th><th>Progress</th><th>Last active</th></tr></thead>
-              <tbody>{students.map((student) => <tr key={student.student_id}><td>{student.full_name}<br /><small>{student.email}</small></td><td>{student.team_name ?? "—"}</td><td>{student.courses_enrolled}</td><td>{student.lessons_completed}/{student.lessons_total}</td><td>{student.completion_pct}%</td><td>{student.last_active ? new Date(student.last_active).toLocaleDateString() : "—"}</td></tr>)}
-                {students.length === 0 && <tr><td colSpan={6}>No active students yet.</td></tr>}</tbody>
-            </table>
+      <section className={styles.sectionCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <h2 className={styles.sectionTitle}>Active students ({(students ?? []).length})</h2>
+          <div style={{ position: "relative", maxWidth: 260, flex: "1 1 220px" }}>
+            <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
+            <Input value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search students…" aria-label="Search students" style={{ paddingLeft: 32 }} />
           </div>
-        </section>
-        <section className={styles.sectionCard} style={{ marginTop: 24 }}>
+        </div>
+        {studentsLoading ? <Shimmer rows={3} /> : <div className={styles.tableContainer} style={{ marginTop: 14 }}>
+          <table className={styles.dataTable}><thead><tr><th>Student</th><th>Team</th><th>Courses</th><th>Lessons</th><th>Progress</th><th>Last active</th></tr></thead>
+            <tbody>{filteredStudents.map((student: SchoolStudentRow) => <tr key={student.student_id}><td>{student.full_name}<br /><small>{student.email}</small></td><td>{student.team_name ?? "—"}</td><td>{student.courses_enrolled}</td><td>{student.lessons_completed}/{student.lessons_total}</td><td>{student.completion_pct}%</td><td>{student.last_active ? new Date(student.last_active).toLocaleDateString() : "—"}</td></tr>)}
+              {filteredStudents.length === 0 && <tr><td colSpan={6}>{studentSearch ? "No students match your search." : "No active students yet."}</td></tr>}</tbody>
+          </table>
+        </div>}
+      </section>
+      <section className={styles.sectionCard} style={{ marginTop: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <h2 className={styles.sectionTitle}>Student invitations</h2>
-          <div className={styles.tableContainer} style={{ marginTop: 14 }}>
-            <table className={styles.dataTable}><thead><tr><th>Email</th><th>Status</th><th>Expires</th><th>Invite link</th><th>Action</th></tr></thead>
-              <tbody>{invitations.map((invitation) => <tr key={invitation.id}><td>{invitation.email}</td><td>{invitation.accepted ? "Accepted" : invitation.revoked_at ? "Revoked" : "Pending"}</td><td>{new Date(invitation.expires_at).toLocaleDateString()}</td><td>{!invitation.accepted && !invitation.revoked_at && <a href={inviteUrl(invitation)}>Open signup link</a>}</td><td>{!invitation.accepted && !invitation.revoked_at && <button type="button" className={styles.actionBtn} disabled={busy} onClick={() => void revoke(invitation)}>Revoke</button>}</td></tr>)}
-                {invitations.length === 0 && <tr><td colSpan={5}>No invitations found.</td></tr>}</tbody>
-            </table>
+          <div style={{ position: "relative", maxWidth: 260, flex: "1 1 220px" }}>
+            <Search size={15} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} />
+            <Input value={inviteSearch} onChange={(event) => setInviteSearch(event.target.value)} placeholder="Search invitations…" aria-label="Search invitations" style={{ paddingLeft: 32 }} />
           </div>
-        </section>
-      </>}
+        </div>
+        {invitesLoading ? <Shimmer rows={3} /> : <div className={styles.tableContainer} style={{ marginTop: 14 }}>
+          <table className={styles.dataTable}><thead><tr><th>Email</th><th>Status</th><th>Expires</th><th>Invite link</th><th>Action</th></tr></thead>
+            <tbody>{filteredInvitations.map((invitation) => <tr key={invitation.id}><td>{invitation.email}</td><td>{invitation.accepted ? "Accepted" : invitation.revoked_at ? "Revoked" : "Pending"}</td><td>{new Date(invitation.expires_at).toLocaleDateString()}</td><td>{!invitation.accepted && !invitation.revoked_at && <a href={inviteUrl(invitation)}>Open signup link</a>}</td><td>{!invitation.accepted && !invitation.revoked_at && <button type="button" className={styles.actionBtn} disabled={busy} onClick={() => revoke.mutate(invitation)}>Revoke</button>}</td></tr>)}
+              {filteredInvitations.length === 0 && <tr><td colSpan={5}>{inviteSearch ? "No invitations match your search." : "No invitations found."}</td></tr>}</tbody>
+          </table>
+        </div>}
+      </section>
     </div>
   );
 }
-
-
