@@ -26,29 +26,24 @@ jobs:
         # so a plain `tsc --noEmit` would check nothing.
         run: npx tsc -b --noEmit
 
-      - name: Install Playwright browsers
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
-
-      # STAGING_SUPABASE_URL / STAGING_SUPABASE_ANON_KEY are GitHub Actions
-      # repo secrets that don't exist yet — they should point at a dedicated
-      # staging Supabase project (never production) once one is created.
-      # Until the user adds those secrets, VITE_SUPABASE_URL/ANON_KEY below
-      # resolve to empty strings, `supabaseConfigured` in
-      # frontend/src/lib/supabaseClient.ts is false, and the Supabase-backed
-      # tests that need a real backend will fail — frontend/playwright.config.ts's
-      # `webServer` block still boots the Vite dev server fine, but any spec
-      # that depends on real Supabase data/auth won't have it. That's expected
-      # and not a workaround target: do NOT hardcode real/production Supabase
-      # credentials here to "fix" it. Once the user creates a staging Supabase
-      # project and adds these two secrets in repo Settings → Secrets and
-      # variables → Actions, this step starts exercising the real backend.
-      - name: Run Playwright tests
+      # No e2e test suite exists yet (the old frontend/tests/e2e/portal/ specs were
+      # for the pre-Next.js Vite app and no longer apply). Until a real suite is
+      # written for the current app, a clean production build is the honest signal
+      # that the app actually compiles and every page resolves — real regressions
+      # (a broken import, a bad server/client component boundary) fail this step.
+      #
+      # STAGING_SUPABASE_URL / STAGING_SUPABASE_ANON_KEY are GitHub Actions repo
+      # secrets that don't exist yet — they should point at a dedicated staging
+      # Supabase project (never production) once one is created. The app is fully
+      # client-rendered (no server-side data fetching at build time), so the build
+      # succeeds without them; add them once a staging project exists so this step
+      # can also smoke-test against a real backend later.
+      - name: Build
         working-directory: frontend
         env:
-          VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
-        run: npx playwright test
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+        run: npm run build
 
   security:
     runs-on: ubuntu-latest
