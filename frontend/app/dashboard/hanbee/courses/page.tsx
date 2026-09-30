@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../../dashboard.module.css";
+import { Input, Textarea } from "../../../../components/ui/FormField";
+import Shimmer from "../../../../components/ui/Shimmer";
 import { authenticatedSupabaseFetch, getAccountProfile, type AccountProfile } from "../../../../lib/supabaseAuth";
 
 type Course = { id: string; title: string; description: string; status: "draft" | "published" | "archived"; cover_accent: string; created_at: string };
@@ -56,10 +58,10 @@ export default function HanbeeCoursesPage() {
   return <div><div className={styles.pageHeader}><h1 className={styles.pageTitle}>Course Catalog</h1><p className={styles.pageSubtitle}>Create and publish learning content for students</p></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {canManage && <form className={styles.sectionCard} onSubmit={createCourse} style={{ marginBottom: 24 }}><h2 className={styles.sectionTitle}>Create a course</h2><div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-      <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} /></label>
-      <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} maxLength={5000} /></label>
+      <label>Title<Input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} /></label>
+      <label>Description<Textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} maxLength={5000} /></label>
     </div><button type="submit" className={styles.actionBtn} disabled={saving} style={{ marginTop: 14 }}>{saving ? "Saving…" : "Create draft"}</button></form>}
-    {loading ? <p role="status">Loading courses…</p> : <div style={{ display: "grid", gap: 14 }}>{courses.map((course) => <article key={course.id} className={styles.sectionCard}>
+    {loading ? <Shimmer variant="cards" count={4} /> : <div style={{ display: "grid", gap: 14 }}>{courses.map((course) => <article key={course.id} className={styles.sectionCard}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}><div><h2 className={styles.sectionTitle}>{course.title}</h2><p style={{ color: "var(--text-muted)", marginTop: 8 }}>{course.description || "No description yet."}</p><p style={{ marginTop: 8 }}>Status: {course.status} · Created {new Date(course.created_at).toLocaleDateString()}</p></div><div style={{ display: "flex", gap: 10 }}><Link href={`/dashboard/courses/${encodeURIComponent(course.id)}`} className={styles.actionBtn}>Open course</Link>{canManage && <button type="button" className={styles.actionBtn} disabled={saving} onClick={() => void changeStatus(course)}>{course.status === "draft" ? "Publish" : course.status === "published" ? "Archive" : "Restore draft"}</button>}</div></div>
     </article>)}{courses.length === 0 && <div className={styles.sectionCard}>No courses are available yet.</div>}</div>}
   </div>;

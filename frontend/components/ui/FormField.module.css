@@ -1,0 +1,36 @@
+.field {
+  width: 100%;
+  background: var(--bg-input, var(--bg-card));
+  color: var(--text-main);
+  border: var(--border-subtle);
+  box-shadow: var(--clay-shadow-active);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field::placeholder {
+  color: var(--text-muted);
+}
+
+.field:focus {
+  outline: none;
+  background: var(--bg-card);
+  box-shadow: var(--clay-shadow-active);
+}
+
+.field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+textarea.field {
+  resize: vertical;
+  min-height: 80px;
+}
+
+select.field {
+  cursor: pointer;
+}

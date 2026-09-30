@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
+import { Input, Textarea, Select } from "../../ui/FormField";
 import { getAccountProfile } from "../../../lib/supabaseAuth";
 import { createTournament, listTournaments, updateTournament, type TournamentRecord, type TournamentStatus } from "../../../lib/tournamentAdminApi";
 
@@ -83,13 +84,13 @@ export default function TournamentManager() {
       <form className={styles.sectionCard} onSubmit={submit} style={{ marginBottom: 20 }}>
         <h3>{editingId ? "Edit tournament" : "Create tournament"}</h3>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 14 }}>
-          <label>Title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required maxLength={180} /></label>
-          <label>Venue<input value={form.venue} onChange={(event) => setForm({ ...form, venue: event.target.value })} maxLength={240} /></label>
-          <label>Starts<input type="datetime-local" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} required /></label>
-          <label>Ends<input type="datetime-local" value={form.endsAt} onChange={(event) => setForm({ ...form, endsAt: event.target.value })} required /></label>
-          {editingId && <label>Status<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as TournamentStatus })}><option value="upcoming">Upcoming</option><option value="live">Live</option><option value="completed">Completed</option></select></label>}
+          <label>Title<Input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required maxLength={180} /></label>
+          <label>Venue<Input value={form.venue} onChange={(event) => setForm({ ...form, venue: event.target.value })} maxLength={240} /></label>
+          <label>Starts<Input type="datetime-local" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} required /></label>
+          <label>Ends<Input type="datetime-local" value={form.endsAt} onChange={(event) => setForm({ ...form, endsAt: event.target.value })} required /></label>
+          {editingId && <label>Status<Select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as TournamentStatus })}><option value="upcoming">Upcoming</option><option value="live">Live</option><option value="completed">Completed</option></Select></label>}
         </div>
-        <label style={{ display: "block", marginTop: 12 }}>Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={4000} rows={3} style={{ display: "block", width: "100%" }} /></label>
+        <label style={{ display: "block", marginTop: 12 }}>Description<Textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={4000} rows={3} style={{ display: "block", width: "100%" }} /></label>
         <div style={{ display: "flex", gap: 10, marginTop: 14 }}><button type="submit" disabled={saving}>{saving ? "Saving…" : editingId ? "Save tournament" : "Create tournament"}</button>{editingId && <button type="button" disabled={saving} onClick={() => { setEditingId(""); setForm(blank); }}>Cancel</button>}</div>
       </form>
       {loading ? <p role="status">Loading tournament list…</p> : <div style={{ display: "grid", gap: 12 }}>

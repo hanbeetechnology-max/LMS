@@ -3,21 +3,19 @@
 import { useEffect, useState } from "react";
 import { Search, Menu, X } from "lucide-react";
 import styles from "../layout.module.css";
-import { getAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
+import type { AccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 function roleLabel(role: AccountProfile["role"]) {
   return role.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default function Header({ onMenuClick, menuOpen }: { onMenuClick: () => void; menuOpen: boolean }) {
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile } = useSessionProfile();
   const [today, setToday] = useState("");
 
   useEffect(() => {
-    let active = true;
     setToday(new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(new Date()));
-    getAccountProfile().then((account) => { if (active) setProfile(account); }).catch(() => undefined);
-    return () => { active = false; };
   }, []);
 
   const name = profile?.full_name || "Hanbee learner";

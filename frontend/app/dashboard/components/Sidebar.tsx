@@ -1,12 +1,12 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, BookOpen, Clock, Bell, Settings, Trophy, Users, MessageSquare, Bot, School, CalendarDays, ClipboardList, UserCheck, LogOut, ClipboardCheck, Activity, X } from "lucide-react";
 import styles from "../layout.module.css";
 import ModeSwitcher from "./ModeSwitcher";
-import { getAccountProfile, readStoredSession, signOut, type AccountProfile } from "../../../lib/supabaseAuth";
+import { readStoredSession, signOut, type AccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { useMode } from "../ModeContext";
 
 const studentTournamentMenu = [
@@ -75,13 +75,7 @@ function labelRole(role: AccountProfile["role"]) {
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const { mode } = useMode();
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getAccountProfile().then((account) => { if (active) setProfile(account); }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+  const { data: profile } = useSessionProfile();
 
   const items = profile?.role === "school_staff"
     ? schoolMenu

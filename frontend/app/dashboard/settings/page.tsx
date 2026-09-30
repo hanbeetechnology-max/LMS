@@ -5,7 +5,7 @@ import { Moon, Sun, Monitor, Palette } from "lucide-react";
 import Link from "next/link";
 import styles from "./settings.module.css";
 import { useTheme } from "../ThemeProvider";
-import { getAccountProfile, updateAccountProfile, type AccountProfile } from "../../../lib/supabaseAuth";
+import { useSessionProfile, useUpdateProfile } from "../../../lib/hooks/useSessionProfile";
 
 export default function SettingsPage() {
   const [toggles, setToggles] = useState({
@@ -15,32 +15,30 @@ export default function SettingsPage() {
   });
 
   const { theme, setTheme, accentHue, setAccentHue, accentLightness, setAccentLightness } = useTheme();
-  const [isSaving, setIsSaving] = useState(false);
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useSessionProfile();
+  const updateProfile = useUpdateProfile();
   const [fullName, setFullName] = useState("");
-  const [profileLoading, setProfileLoading] = useState(true);
   const [feedback, setFeedback] = useState("");
 
+  // Keep the editable field in sync with the loaded/cached profile, without
+  // clobbering what the person is actively typing on a background refetch.
   useEffect(() => {
-    let active = true;
-    getAccountProfile()
-      .then((value) => {
-        if (!active) return;
-        setProfile(value);
-        setFullName(value.full_name);
-        try {
-          const saved = localStorage.getItem(`hanbee-dashboard-toggles:${value.id}`);
-          if (saved) setToggles((current) => ({ ...current, ...JSON.parse(saved) }));
-        } catch {
-          localStorage.removeItem(`hanbee-dashboard-toggles:${value.id}`);
-        }
-      })
-      .catch((error: unknown) => {
-        if (active) setFeedback(error instanceof Error ? error.message : "We couldn't load your profile.");
-      })
-      .finally(() => { if (active) setProfileLoading(false); });
-    return () => { active = false; };
-  }, []);
+    if (profile) setFullName(profile.full_name);
+  }, [profile?.full_name]);
+
+  useEffect(() => {
+    if (!profile) return;
+    try {
+      const saved = localStorage.getItem(`hanbee-dashboard-toggles:${profile.id}`);
+      if (saved) setToggles((current) => ({ ...current, ...JSON.parse(saved) }));
+    } catch {
+      localStorage.removeItem(`hanbee-dashboard-toggles:${profile.id}`);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (profileError) setFeedback(profileError instanceof Error ? profileError.message : "We couldn't load your profile.");
+  }, [profileError]);
 
   const handleToggle = (key: keyof typeof toggles) => {
     const next = { ...toggles, [key]: !toggles[key] };
@@ -55,17 +53,14 @@ export default function SettingsPage() {
       return;
     }
     setFeedback("");
-    setIsSaving(true);
     try {
-      await updateAccountProfile({ id: profile.id, full_name: fullName });
-      setProfile({ ...profile, full_name: fullName.trim() });
+      await updateProfile.mutateAsync({ id: profile.id, full_name: fullName });
       setFeedback("Profile saved.");
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "We couldn't save your changes.");
-    } finally {
-      setIsSaving(false);
     }
   };
+  const isSaving = updateProfile.isPending;
 
   return (
     <div>

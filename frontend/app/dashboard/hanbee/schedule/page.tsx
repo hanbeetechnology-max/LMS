@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { authenticatedSupabaseFetch, getAccountProfile, type AccountProfile } from "../../../../lib/supabaseAuth";
+import { Input, Select } from "../../../../components/ui/FormField";
+import Shimmer from "../../../../components/ui/Shimmer";
 import styles from "../../dashboard.module.css";
 
 type CalendarEvent = { id: string; title: string; event_type: "class_session" | "office_hours" | "other"; location: string; starts_at: string; ends_at: string; section_id: string | null };
@@ -18,6 +20,7 @@ export default function HanbeeSchedulePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [deletingId, setDeletingId] = useState("");
   const canManage = profile?.role === "staff" || profile?.role === "manager";
 
   async function loadEvents() {
@@ -44,15 +47,25 @@ export default function HanbeeSchedulePage() {
     finally { setSaving(false); }
   }
 
+  async function deleteEvent(item: CalendarEvent) {
+    if (!window.confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    setDeletingId(item.id); setError(""); setMessage("");
+    try {
+      await authenticatedSupabaseFetch<unknown>(`/rest/v1/calendar_events?id=eq.${encodeURIComponent(item.id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+      setMessage("Event deleted."); await loadEvents();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "We couldn't delete this event."); }
+    finally { setDeletingId(""); }
+  }
+
   return <div><div className={styles.pageHeader}><h1 className={styles.pageTitle}>Hanbee Schedule</h1><p className={styles.pageSubtitle}>Published classes, office hours, and platform events</p></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {canManage && <form className={styles.sectionCard} onSubmit={createEvent} style={{ marginBottom: 24 }}><h2 className={styles.sectionTitle}>Add an event</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginTop: 16 }}>
-      <label>Title<input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} /></label>
-      <label>Type<select value={eventType} onChange={(event) => setEventType(event.target.value as CalendarEvent["event_type"])}><option value="other">Other</option><option value="class_session">Class session</option><option value="office_hours">Office hours</option></select></label>
-      <label>Location<input value={location} onChange={(event) => setLocation(event.target.value)} maxLength={200} /></label>
-      <label>Starts<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} required /></label>
-      <label>Ends<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} required /></label>
+      <label>Title<Input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} /></label>
+      <label>Type<Select value={eventType} onChange={(event) => setEventType(event.target.value as CalendarEvent["event_type"])}><option value="other">Other</option><option value="class_session">Class session</option><option value="office_hours">Office hours</option></Select></label>
+      <label>Location<Input value={location} onChange={(event) => setLocation(event.target.value)} maxLength={200} /></label>
+      <label>Starts<Input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} required /></label>
+      <label>Ends<Input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} required /></label>
     </div><button type="submit" className={styles.actionBtn} disabled={saving} style={{ marginTop: 14 }}>{saving ? "Saving…" : "Add to schedule"}</button></form>}
-    <div className={styles.sectionCard}><h2 className={styles.sectionTitle}>Upcoming events</h2>{loading ? <p role="status">Loading schedule…</p> : events.map((item) => <article key={item.id} style={{ padding: "16px 0", borderBottom: "1px solid var(--border-subtle)" }}><h3>{item.title}</h3><p style={{ color: "var(--text-muted)", marginTop: 5 }}>{item.event_type.replaceAll("_", " ")} · {new Date(item.starts_at).toLocaleString()} – {new Date(item.ends_at).toLocaleTimeString()} {item.location && `· ${item.location}`}</p></article>)}{!loading && events.length === 0 && <p style={{ marginTop: 12 }}>No events have been scheduled.</p>}</div>
+    <div className={styles.sectionCard}><h2 className={styles.sectionTitle}>Upcoming events</h2>{loading ? <Shimmer rows={4} /> : events.map((item) => <article key={item.id} style={{ padding: "16px 0", borderBottom: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}><div><h3>{item.title}</h3><p style={{ color: "var(--text-muted)", marginTop: 5 }}>{item.event_type.replaceAll("_", " ")} · {new Date(item.starts_at).toLocaleString()} – {new Date(item.ends_at).toLocaleTimeString()} {item.location && `· ${item.location}`}</p></div>{canManage && <button type="button" className={styles.actionBtn} disabled={deletingId === item.id} onClick={() => void deleteEvent(item)}>{deletingId === item.id ? "Deleting…" : "Delete"}</button>}</article>)}{!loading && events.length === 0 && <p style={{ marginTop: 12 }}>No events have been scheduled.</p>}</div>
   </div>;
 }
