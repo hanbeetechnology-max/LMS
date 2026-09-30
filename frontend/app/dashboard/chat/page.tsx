@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "./chat.module.css";
 import { Send, Search } from "lucide-react";
 import {
@@ -10,9 +11,8 @@ import {
   markChatRead,
   sendChatMessage,
   startDirectConversation,
+  CHAT_MESSAGE_PAGE_SIZE,
   type ChatContact,
-  type ChatConversation,
-  type ChatMessage,
 } from "../../../lib/messagingApi";
 import { readStoredSession } from "../../../lib/supabaseAuth";
 
@@ -22,93 +22,95 @@ function initials(name: string) {
 
 export default function ChatPage() {
   const [currentUserId, setCurrentUserId] = useState("");
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [contacts, setContacts] = useState<ChatContact[]>([]);
   const [activeConversationId, setActiveConversationId] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
-  const reloadConversations = useCallback(async () => setConversations(await fetchChatConversations()), []);
+  useEffect(() => { setCurrentUserId(readStoredSession()?.user.id ?? ""); }, []);
 
+  const { data: conversations, isLoading: conversationsLoading } = useQuery({
+    queryKey: ["chat-conversations"],
+    queryFn: fetchChatConversations,
+  });
+  const { data: contacts } = useQuery({ queryKey: ["chat-contacts"], queryFn: fetchChatContacts });
+
+  // Pick the conversation named in the URL (?conversation=...) or the first
+  // one, once the list has actually loaded - only runs until a choice is made.
   useEffect(() => {
-    let active = true;
-    setCurrentUserId(readStoredSession()?.user.id ?? "");
-    Promise.all([fetchChatConversations(), fetchChatContacts()])
-      .then(([rows, directory]) => {
-        if (!active) return;
-        setConversations(rows);
-        setContacts(directory);
-        const requestedId = new URLSearchParams(window.location.search).get("conversation");
-        const requestedConversation = requestedId ? rows.find((row) => row.id === requestedId) : undefined;
-        if (requestedConversation) setActiveConversationId(requestedConversation.id);
-        else if (rows[0]) setActiveConversationId(rows[0].id);
-      })
-      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load your conversations."); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+    if (activeConversationId || !conversations) return;
+    const requestedId = new URLSearchParams(window.location.search).get("conversation");
+    const requested = requestedId ? conversations.find((row) => row.id === requestedId) : undefined;
+    setActiveConversationId(requested?.id ?? conversations[0]?.id ?? "");
+  }, [conversations, activeConversationId]);
 
+  const messagesQuery = useInfiniteQuery({
+    queryKey: ["chat-messages", activeConversationId],
+    queryFn: ({ pageParam }: { pageParam?: string }) => fetchChatMessages(activeConversationId, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => (lastPage.length === CHAT_MESSAGE_PAGE_SIZE ? lastPage[0].created_at : undefined),
+    enabled: Boolean(activeConversationId),
+  });
+  // Pages arrive newest-page-first (page 0 = latest 50); each page is itself
+  // oldest-to-newest, so reverse the page order and flatten for chronological
+  // display: [...oldest page ... newest page].
+  const messages = [...(messagesQuery.data?.pages ?? [])].reverse().flat();
+
+  const markRead = useMutation({
+    mutationFn: markChatRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chat-conversations"] }),
+  });
   useEffect(() => {
-    let active = true;
-    if (!activeConversationId) { setMessages([]); return () => { active = false; }; }
-    Promise.all([fetchChatMessages(activeConversationId), markChatRead(activeConversationId)])
-      .then(([rows]) => {
-        if (!active) return;
-        setMessages(rows);
-        void reloadConversations().catch(() => undefined);
-      })
-      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "We couldn't load this conversation."); });
-    return () => { active = false; };
-  }, [activeConversationId, reloadConversations]);
+    if (activeConversationId) markRead.mutate(activeConversationId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversationId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // Auto-scroll to the newest message only when the LATEST page grows (a new
+  // message arrived or was sent) - not when an older page was just loaded in
+  // response to "Load earlier messages", which would otherwise yank the
+  // person's scroll position away from what they just asked to see.
+  const latestPageLength = messagesQuery.data?.pages[0]?.length ?? 0;
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [activeConversationId, latestPageLength]);
 
-  const activeConversation = conversations.find((conversation) => conversation.id === activeConversationId);
-  const activeContact = contacts.find((contact) => contact.user_id === activeConversation?.other_user_id);
+  const openContact = useMutation({
+    mutationFn: startDirectConversation,
+    onSuccess: async (conversationId) => {
+      await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      setActiveConversationId(conversationId);
+    },
+    onError: (reason) => setError(reason instanceof Error ? reason.message : "You can't start a conversation with this person."),
+  });
+
+  const sendMessage = useMutation({
+    mutationFn: (body: string) => sendChatMessage(activeConversationId, body),
+    onSuccess: () => {
+      setInputValue("");
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", activeConversationId] });
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+    },
+    onError: (reason) => setError(reason instanceof Error ? reason.message : "We couldn't send your message."),
+  });
+
+  function handleSend() {
+    const body = inputValue.trim();
+    if (!body || !activeConversationId || sendMessage.isPending) return;
+    setError("");
+    sendMessage.mutate(body);
+  }
+
+  const conversationList = conversations ?? [];
+  const contactList = contacts ?? [];
+  const activeConversation = conversationList.find((conversation) => conversation.id === activeConversationId);
+  const activeContact = contactList.find((contact) => contact.user_id === activeConversation?.other_user_id);
   const title = activeConversation?.kind === "direct"
     ? activeConversation.other_full_name ?? "Conversation"
     : activeConversation?.title ?? "Hanbee chat";
-  const visibleConversations = conversations.filter((conversation) =>
+  const visibleConversations = conversationList.filter((conversation) =>
     (conversation.title ?? conversation.other_full_name ?? "Group chat").toLowerCase().includes(search.toLowerCase()),
   );
-  const visibleContacts = contacts.filter((contact) => contact.full_name.toLowerCase().includes(search.toLowerCase()));
-
-  async function openContact(contact: ChatContact) {
-    setBusy(true);
-    setError("");
-    try {
-      const conversationId = await startDirectConversation(contact.user_id);
-      await reloadConversations();
-      setActiveConversationId(conversationId);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "You can't start a conversation with this person.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSend() {
-    const body = inputValue.trim();
-    if (!body || !activeConversationId || busy) return;
-    setBusy(true);
-    setError("");
-    try {
-      await sendChatMessage(activeConversationId, body);
-      setInputValue("");
-      const rows = await fetchChatMessages(activeConversationId);
-      setMessages(rows);
-      await reloadConversations();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We couldn't send your message.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const visibleContacts = contactList.filter((contact) => contact.full_name.toLowerCase().includes(search.toLowerCase()));
 
   const formatTime = (value: string | null) => value ? new Date(value).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "";
 
@@ -123,7 +125,7 @@ export default function ChatPage() {
           </div>
         </div>
         <div className={styles.contactsList}>
-          {loading && <p role="status">Loading conversations…</p>}
+          {conversationsLoading && <p role="status">Loading conversations…</p>}
           {visibleConversations.map((conversation) => {
             const contactName = conversation.kind === "direct" ? conversation.other_full_name ?? "Hanbee user" : conversation.title ?? "Group chat";
             return (
@@ -138,8 +140,8 @@ export default function ChatPage() {
             );
           })}
           {visibleContacts.length > 0 && <h3 style={{ padding: "12px 16px 4px" }}>Start a conversation</h3>}
-          {visibleContacts.map((contact) => (
-            <button key={contact.user_id} type="button" className={styles.contactItem} onClick={() => void openContact(contact)} disabled={busy}>
+          {visibleContacts.map((contact: ChatContact) => (
+            <button key={contact.user_id} type="button" className={styles.contactItem} onClick={() => openContact.mutate(contact.user_id)} disabled={openContact.isPending}>
               <div className={styles.contactAvatar}>{initials(contact.full_name)}</div>
               <div className={styles.contactInfo}>
                 <div className={styles.contactName}>{contact.full_name}</div>
@@ -147,7 +149,7 @@ export default function ChatPage() {
               </div>
             </button>
           ))}
-          {!loading && visibleConversations.length === 0 && visibleContacts.length === 0 && <p>No conversations or contacts found.</p>}
+          {!conversationsLoading && visibleConversations.length === 0 && visibleContacts.length === 0 && <p>No conversations or contacts found.</p>}
         </div>
       </div>
 
@@ -160,8 +162,15 @@ export default function ChatPage() {
             </header>
             {error && <p role="alert" style={{ padding: "8px 16px" }}>{error}</p>}
             <div className={styles.chatHistory}>
+              {messagesQuery.hasNextPage && (
+                <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+                  <button type="button" className={styles.contactItem} style={{ display: "inline-flex", width: "auto", padding: "6px 16px" }} disabled={messagesQuery.isFetchingNextPage} onClick={() => messagesQuery.fetchNextPage()}>
+                    {messagesQuery.isFetchingNextPage ? "Loading…" : "Load earlier messages"}
+                  </button>
+                </div>
+              )}
               {messages.map((message) => {
-                const mine = message.sender_id === activeContact?.user_id ? false : message.sender_id === (currentUserId);
+                const mine = message.sender_id === activeContact?.user_id ? false : message.sender_id === currentUserId;
                 return <div key={message.id} className={`${styles.messageWrapper} ${mine ? styles.me : styles.other}`}>
                   <div className={`${styles.message} ${mine ? styles.me : styles.other}`}>{message.body}</div>
                   <time className={styles.timestamp} dateTime={message.created_at}>{formatTime(message.created_at)}</time>
@@ -171,8 +180,8 @@ export default function ChatPage() {
             </div>
             <div className={styles.inputArea}>
               <div className={styles.inputWrapper}>
-                <input type="text" className={styles.input} maxLength={4000} placeholder={`Message ${title}…`} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void handleSend(); } }} />
-                <button className={styles.sendBtn} onClick={() => void handleSend()} disabled={!inputValue.trim() || busy} aria-label="Send message"><Send size={18} /></button>
+                <input type="text" className={styles.input} maxLength={4000} placeholder={`Message ${title}…`} value={inputValue} onChange={(event) => setInputValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); handleSend(); } }} />
+                <button className={styles.sendBtn} onClick={handleSend} disabled={!inputValue.trim() || sendMessage.isPending} aria-label="Send message"><Send size={18} /></button>
               </div>
             </div>
           </>

@@ -46,14 +46,30 @@ export const fetchChatConversations = () => rpc<ChatConversation[]>("chat_conver
 export const fetchChatContacts = () => rpc<ChatContact[]>("chat_contacts");
 export const markChatRead = (conversationId: string) => rpc<boolean>("chat_mark_read", { p_conversation_id: conversationId });
 
-export async function fetchChatMessages(conversationId: string) {
+const MESSAGE_PAGE_SIZE = 50;
+
+/**
+ * One page of a conversation's history, newest-first at the database level
+ * (cheapest way to get "the latest N") but returned in ascending (oldest
+ * first) order, ready to render or prepend directly.
+ *
+ * `before`, when given, is the created_at of the oldest message already
+ * loaded — pass it back to fetch the next older page ("load more" at the
+ * top of the thread). Without it, fetches the most recent page.
+ */
+export async function fetchChatMessages(conversationId: string, before?: string) {
   const query = new URLSearchParams({
     select: "id,conversation_id,sender_id,body,kind,created_at",
     conversation_id: `eq.${conversationId}`,
-    order: "created_at.asc",
+    order: "created_at.desc",
+    limit: String(MESSAGE_PAGE_SIZE),
   });
-  return authenticatedSupabaseFetch<ChatMessage[]>(`/rest/v1/messages?${query.toString()}`);
+  if (before) query.set("created_at", `lt.${before}`);
+  const rows = await authenticatedSupabaseFetch<ChatMessage[]>(`/rest/v1/messages?${query.toString()}`);
+  return rows.reverse();
 }
+
+export const CHAT_MESSAGE_PAGE_SIZE = MESSAGE_PAGE_SIZE;
 
 export async function startDirectConversation(otherUserId: string) {
   return rpc<string>("start_conversation_with", { other_user_id: otherUserId });
