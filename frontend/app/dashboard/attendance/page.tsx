@@ -89,26 +89,30 @@ export default function AttendancePage() {
         <p className={styles.pageSubtitle}>Staff clock-in and attendance history</p>
       </div>
 
-      <div className={styles.clockPanel}>
-        <div className={styles.timeDisplay}>{formattedTime}</div>
-        <div className={styles.clockAction}>
-          <div className={styles.statusIndicator}>
-            <div className={styles.statusDot} style={{ backgroundColor: isClockedIn ? "#00ff80" : "var(--text-muted)", boxShadow: isClockedIn ? "0 0 10px #00ff80" : "none" }} />
-            Status: {loading ? "Loading" : isClockedIn ? "Checked In" : "Checked Out"}
-          </div>
-          <button
-            className={styles.clockInBtn}
-            onClick={() => void toggleClock()}
-            disabled={loading || busy || !canAttend || Boolean(today?.clock_out)}
-            style={{ backgroundColor: isClockedIn ? "rgba(255, 68, 68, 0.1)" : "var(--bg-card)", borderColor: isClockedIn ? "rgba(255, 68, 68, 0.3)" : "var(--border-subtle)", color: isClockedIn ? "#ff4444" : "var(--text-main)" }}
-          >
-            {busy ? "SAVING…" : isClockedIn ? <><Square size={20} fill="currentColor" /> CLOCK OUT</> : <><Play size={20} fill="currentColor" /> CLOCK IN</>}
-          </button>
-        </div>
-      </div>
-      {error && <p role="alert" style={{ marginTop: 16 }}>{error}</p>}
+      {!loading && !canAttend && error && <p role="alert">{error}</p>}
 
-      <div className={styles.historySection}>
+      {(loading || canAttend) && (
+        <div className={styles.clockPanel}>
+          <div className={styles.timeDisplay}>{formattedTime}</div>
+          <div className={styles.clockAction}>
+            <div className={styles.statusIndicator}>
+              <div className={styles.statusDot} style={{ backgroundColor: isClockedIn ? "#00ff80" : "var(--text-muted)", boxShadow: isClockedIn ? "0 0 10px #00ff80" : "none" }} />
+              Status: {loading ? "Loading" : isClockedIn ? "Checked In" : "Checked Out"}
+            </div>
+            <button
+              className={styles.clockInBtn}
+              onClick={() => void toggleClock()}
+              disabled={loading || busy || !canAttend || Boolean(today?.clock_out)}
+              style={{ backgroundColor: isClockedIn ? "rgba(255, 68, 68, 0.1)" : "var(--bg-card)", borderColor: isClockedIn ? "rgba(255, 68, 68, 0.3)" : "var(--border-subtle)", color: isClockedIn ? "#ff4444" : "var(--text-main)" }}
+            >
+              {busy ? "SAVING…" : isClockedIn ? <><Square size={20} fill="currentColor" /> CLOCK OUT</> : <><Play size={20} fill="currentColor" /> CLOCK IN</>}
+            </button>
+          </div>
+        </div>
+      )}
+      {canAttend && error && <p role="alert" style={{ marginTop: 16 }}>{error}</p>}
+
+      {canAttend && <div className={styles.historySection}>
         <h2 className={styles.historyTitle}>Attendance History</h2>
         {loading ? <p role="status">Loading attendance…</p> : (
           <table className={styles.dataTable}>
@@ -127,7 +131,7 @@ export default function AttendancePage() {
             </tbody>
           </table>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

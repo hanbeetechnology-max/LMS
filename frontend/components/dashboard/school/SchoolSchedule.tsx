@@ -67,7 +67,7 @@ export default function SchoolSchedule() {
     if (eventScope === "school" && !organizationId) { setError("Your account is not linked to an active school."); return; }
     setSaving(true);
     try {
-      await authenticatedSupabaseFetch<unknown>("/rest/v1/calendar_events", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ title: title.trim(), event_type: "other", location: location.trim(), starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), org_id: eventScope === "school" ? organizationId : null, owner_id: eventScope === "personal" ? profile.id : null }) });
+      await authenticatedSupabaseFetch<unknown>("/rest/v1/calendar_events", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ title: title.trim(), event_type: "other", location: location.trim(), starts_at: new Date(startsAt).toISOString(), ends_at: new Date(endsAt).toISOString(), org_id: eventScope === "school" ? organizationId : null, owner_id: eventScope === "personal" ? profile.id : null }) });
       const rows = await authenticatedSupabaseFetch<CalendarEvent[]>("/rest/v1/calendar_events?select=id,title,event_type,location,starts_at,ends_at,section_id,org_id,owner_id&order=starts_at.asc");
       setEvents(rows); setTitle(""); setLocation(""); setStartsAt(""); setEndsAt(""); setNotice(`${eventScope === "school" ? "School" : "Personal"} event added to your schedule.`);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "We couldn't create this event."); }

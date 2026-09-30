@@ -89,7 +89,7 @@ export default function MyTeamPage() {
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>My Team</h1>
         <p className={styles.pageSubtitle}>
-          {tournament ? `${tournament.title} · ${tournament.team_size} players per school team` : "Team formation opens when the next tournament is announced."}
+          {tournament ? `${tournament.title} · ${tournament.team_size} players per school team` : "No tournament is open to you right now. This may be because none has been announced yet, or because your account isn't linked to an active school and isn't set up for solo entry. Contact Hanbee staff if you believe this is wrong."}
         </p>
       </div>
 
