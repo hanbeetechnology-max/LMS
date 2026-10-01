@@ -1,7 +1,11 @@
 import { connect } from "./_db.mjs";
 const c = await connect();
 const id = async e => (await c.query("select id from profiles where email=$1",[e])).rows[0].id;
-const jamie=await id("jamie@hanbeelms.edu"), morgan=await id("morgan@hanbeelms.edu"), info=await id("info@hanbee.in");
+// info@hanbee.in is now the one real manager (migration 0048); morgan@hanbeelms.edu
+// was demoted to Hanbee staff. The variable NAMES below still mean "the manager
+// actor" (morgan) and "another Hanbee staff account" (info) throughout this file,
+// so only the email->variable binding is swapped here, not the logic below.
+const jamie=await id("jamie@hanbeelms.edu"), morgan=await id("info@hanbee.in"), info=await id("morgan@hanbeelms.edu");
 let pass=0, fail=0; const check=(n,ok,x="")=>{(ok?pass++:fail++);console.log(ok?"PASS":"FAIL",n,x)};
 const asUser = async (u) => { await c.query("reset role"); await c.query("set local role authenticated"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:u,role:"authenticated"})]); };
 const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };

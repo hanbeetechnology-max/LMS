@@ -1,7 +1,11 @@
 import { connect } from "./_db.mjs";
 const c = await connect();
 const id = async e => (await c.query("select id from profiles where email=$1",[e])).rows[0].id;
-const jamie=await id("jamie@hanbeelms.edu"), morgan=await id("morgan@hanbeelms.edu"), mgr2=await id("hanbeetechnology@gmail.com"), info=await id("info@hanbee.in");
+// info@hanbee.in is now the one real manager (migration 0048); morgan@hanbeelms.edu
+// and hanbeetechnology@gmail.com were demoted to Hanbee staff. The variable NAMES
+// below still mean "the manager actor" (morgan) and "Hanbee staff accounts" (mgr2,
+// info) throughout this file, so only the email->variable binding is swapped here.
+const jamie=await id("jamie@hanbeelms.edu"), morgan=await id("info@hanbee.in"), mgr2=await id("hanbeetechnology@gmail.com"), info=await id("morgan@hanbeelms.edu");
 let pass=0, fail=0; const check=(n,ok,x="")=>{(ok?pass++:fail++);console.log(ok?"PASS":"FAIL",n,ok?"":x)};
 const asUser = async (u) => { await c.query("reset role"); await c.query("set local role authenticated"); await c.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:u,role:"authenticated"})]); };
 const asOwner = async () => { await c.query("reset role"); await c.query("select set_config('request.jwt.claims','',true)"); };
@@ -28,7 +32,7 @@ await asOwner();
 let g = await one("select c.id, c.title, c.kind, (select member_role from conversation_participants where conversation_id=c.id and user_id=$2) mr, (select count(*)::int from conversation_participants where conversation_id=c.id) n from conversations c where c.org_id=$1",[orgA, ownerA]);
 check("group created on verification, titled, owner is admin", g && g.kind==="group" && g.title==="Alpha - Students" && g.mr==="admin" && g.n===1, JSON.stringify(g));
 const grpA = g.id; const grpB = (await one("select id from conversations where org_id=$1",[orgB])).id;
-check("verification created manager chats for both owners", (await one("select count(*)::int n from conversations where kind='direct'")).n === mgrPinsBefore + 4, "");
+check("verification created manager chats for both owners", (await one("select count(*)::int n from conversations where kind='direct'")).n === mgrPinsBefore + 2, "");
 await asUser(ownerA); await c.query("select * from invite_students($1, array['a1@x.test','a2@x.test'])",[orgA]);
 await asUser(ownerB); await c.query("select * from invite_students($1, array['b1@x.test'])",[orgB]);
 await asUser(ownerA); await c.query("select invite_school_staff($1,'teacher@x.test')",[orgA]);
@@ -42,12 +46,12 @@ const teacherA = await signup("teacher@x.test",{invite_token:teacherTok, full_na
 await asUser(jamie); await c.query("insert into invitations (email, role) values ('solo@x.test','student')");
 await asOwner(); const soloTok=(await one("select token t from invitations where email='solo@x.test'")).t;
 const solo = await signup("solo@x.test",{invite_token:soloTok, full_name:"Solo Sam"});
-// new Hanbee staff: unapproved -> no chats; approved -> pinned with both managers
+// new Hanbee staff: unapproved -> no chats; approved -> pinned with the manager
 const hs2 = await signup("hs2@x.test",{role:"staff", full_name:"Hanbee Two"});
 await asOwner();
 check("unapproved Hanbee staff has no pinned chats yet", (await one("select count(*)::int n from conversation_participants where user_id=$1",[hs2])).n===0);
 await c.query("update profiles set approved=true where id=$1",[hs2]);
-check("approving Hanbee staff pins chats with both managers", (await one("select count(*)::int n from conversation_participants where user_id=$1",[hs2])).n===2);
+check("approving Hanbee staff pins chats with the manager", (await one("select count(*)::int n from conversation_participants where user_id=$1",[hs2])).n===1);
 const course = (await one("insert into courses (title, owner_id, status) values ('X Course',$1,'published') returning id",[hs2])).id;
 const sect = (await one("insert into sections (course_id,name,start_date,end_date) values ($1,'S1',current_date,current_date+30) returning id",[course])).id;
 await c.query("insert into enrollments (section_id, student_id, status) values ($1,$2,'active'),($1,$3,'active'),($1,$4,'dropped')",[sect,sA1,solo,sB1]);
@@ -179,7 +183,7 @@ await asUser(sA2); r = await tryq("select start_conversation_with($1)",[teacherA
 
 // ---- pinned manager chats
 await asOwner();
-bad=[]; for (const mg of [morgan, mgr2]) for (const t of [ownerA, ownerB, jamie, info, hs2]) { const d = await one("select chat_direct_between($1,$2) v",[mg,t]); if(!d.v) bad.push(names[mg]+"-"+names[t]); }
+bad=[]; for (const mg of [morgan]) for (const t of [ownerA, ownerB, jamie, info, hs2]) { const d = await one("select chat_direct_between($1,$2) v",[mg,t]); if(!d.v) bad.push(names[mg]+"-"+names[t]); }
 check("every manager has a pinned chat with every owner and Hanbee staff", bad.length===0, bad.join());
 await asUser(morgan); conv = (await c.query("select * from chat_conversations() where kind='direct'")).rows; check("pinned chats appear in the manager's list before any message", conv.length>=5 && conv.every(x=>x.last_at===null||true), String(conv.length));
 await asOwner(); const pre = (await one("select count(*)::int n from conversations where kind='direct'")).n; await c.query("select provision_manager_chats()"); check("provision_manager_chats is idempotent", (await one("select count(*)::int n from conversations where kind='direct'")).n===pre);

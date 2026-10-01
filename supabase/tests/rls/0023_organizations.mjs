@@ -14,7 +14,7 @@ check("enum value school_staff exists", (await one("select count(*)::int n from 
 await c.query("begin");
 await asUser(jamie); let r = await one("select is_hanbee_staff() h, is_manager() m, is_staff_or_manager() s");
 check("Hanbee staff helpers", r.h===true && r.m===false && r.s===true, JSON.stringify(r));
-await asUser(morgan); r = await one("select is_hanbee_staff() h, is_manager() m");
+await asUser(info); r = await one("select is_hanbee_staff() h, is_manager() m");
 check("manager helpers", r.m===true && r.h===false, JSON.stringify(r));
 await asUser(ava); r = await one("select is_hanbee_staff() h, is_manager() m, is_staff_or_manager() s, my_org_id() o");
 check("student has no staff powers and no school", !r.h && !r.m && !r.s && r.o===null);
@@ -68,6 +68,6 @@ w = await tryq("insert into organization_members (org_id,user_id,member_role) va
 await c.query("rollback");
 await asOwner();
 check("all test rows rolled back", (await one("select count(*)::int n from organizations")).n===baseOrg);
-check("info@hanbee.in role restored", (await one("select role from profiles where id=$1",[info])).role==="staff");
+check("info@hanbee.in role restored", (await one("select role from profiles where id=$1",[info])).role==="manager");
 console.log(`${pass} passed, ${fail} failed`);
 await c.end();
