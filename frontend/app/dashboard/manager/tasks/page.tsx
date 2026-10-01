@@ -19,6 +19,7 @@ export default function ManagerTasksPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [deletingId, setDeletingId] = useState("");
 
   const load = useCallback(async () => {
     const query = new URLSearchParams({ select: "id,title,description,priority,status,due_date,staff_id,created_at", staff_id: `eq.${managerId}`, order: "due_date.asc.nullslast,created_at.desc" });
@@ -56,6 +57,16 @@ export default function ManagerTasksPage() {
     finally { setSaving(false); }
   }
 
+  async function deleteTask(task: Task) {
+    if (!window.confirm(`Delete "${task.title}"? This can't be undone.`)) return;
+    setDeletingId(task.id); setError(""); setMessage("");
+    try {
+      await authenticatedSupabaseFetch<unknown>(`/rest/v1/staff_tasks?id=eq.${encodeURIComponent(task.id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+      setMessage("Task deleted."); await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "We couldn't delete this task."); }
+    finally { setDeletingId(""); }
+  }
+
   return <div>
     <div className={styles.pageHeader}><h1 className={styles.pageTitle}>My Tasks</h1><p className={styles.pageSubtitle}>Your priorities and follow-ups</p></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
@@ -73,7 +84,10 @@ export default function ManagerTasksPage() {
       {tasks.map((task) => <article key={task.id} className={styles.sectionCard}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div><h2 className={styles.sectionTitle}>{task.title}</h2>{task.description && <p style={{ marginTop: 7, color: "var(--text-muted)" }}>{task.description}</p>}<p style={{ marginTop: 8 }}>{task.priority} priority · {task.due_date ? `Due ${new Date(`${task.due_date}T00:00:00`).toLocaleDateString()}` : "No due date"}</p></div>
-          <label>Status<select value={task.status} disabled={saving} onChange={(event) => void updateStatus(task, event.target.value as Task["status"])}><option value="todo">To do</option><option value="in_progress">In progress</option><option value="done">Done</option></select></label>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <label>Status<select value={task.status} disabled={saving} onChange={(event) => void updateStatus(task, event.target.value as Task["status"])}><option value="todo">To do</option><option value="in_progress">In progress</option><option value="done">Done</option></select></label>
+            <button type="button" className={styles.actionBtn} disabled={deletingId === task.id} onClick={() => void deleteTask(task)}>{deletingId === task.id ? "Deleting…" : "Delete"}</button>
+          </div>
         </div>
       </article>)}
       {tasks.length === 0 && <section className={styles.sectionCard}>No tasks yet. Add one above to keep a follow-up on your list.</section>}
