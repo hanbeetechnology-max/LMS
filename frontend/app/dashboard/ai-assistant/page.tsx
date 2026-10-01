@@ -12,19 +12,50 @@ type Message = {
   timestamp: string;
 };
 
+const GREETING: Message = {
+  id: "1",
+  role: "ai",
+  content: "Hello! I'm your Hanbee AI Mentor. I can help you analyze your lap times, suggest training modules, or answer questions about RC mechanics. How can I assist you today?",
+  timestamp: "10:00 AM",
+};
+
 export default function AIAssistantPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "ai",
-      content: "Hello! I'm your Hanbee AI Mentor. I can help you analyze your lap times, suggest training modules, or answer questions about RC mechanics. How can I assist you today?",
-      timestamp: "10:00 AM",
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([GREETING]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState("");
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    authenticatedSupabaseFetch<{ history: { role: "user" | "model"; content: string; created_at: string }[] }>(
+      "/functions/v1/ai-assistant",
+      { method: "GET" },
+    )
+      .then((result) => {
+        if (!active || !result.history?.length) return;
+        setMessages([
+          GREETING,
+          ...result.history.map((m, i) => ({
+            id: `h${i}`,
+            role: (m.role === "model" ? "ai" : "user") as "ai" | "user",
+            content: m.content,
+            timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          })),
+        ]);
+      })
+      .catch(() => { /* history is a nice-to-have; a fresh greeting is a fine fallback */ })
+      .finally(() => { if (active) setLoadingHistory(false); });
+    return () => { active = false; };
+  }, []);
+
+  const clearHistory = async () => {
+    setMessages([GREETING]);
+    try {
+      await authenticatedSupabaseFetch("/functions/v1/ai-assistant", { method: "DELETE" });
+    } catch { /* the UI already reset; a failed server-side clear isn't worth surfacing */ }
+  };
 
   const suggestedPrompts = [
     "Explain my last lap time",
@@ -88,9 +119,18 @@ export default function AIAssistantPage() {
           <h2>Hanbee AI Mentor</h2>
           <p>Always here to help you learn beyond the obvious</p>
         </div>
+        <button
+          type="button"
+          className={styles.promptChip}
+          onClick={() => void clearHistory()}
+          disabled={messages.length <= 1}
+        >
+          New conversation
+        </button>
       </header>
 
       <div className={styles.chatHistory}>
+        {loadingHistory && <p role="status" style={{ padding: "8px 20px", opacity: 0.6 }}>Loading your conversation…</p>}
         {messages.map((msg) => (
           <div key={msg.id} className={`${styles.messageWrapper} ${styles[msg.role]}`}>
             <div className={`${styles.message} ${styles[msg.role]}`}>

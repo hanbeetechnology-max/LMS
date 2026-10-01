@@ -15,7 +15,7 @@ function json(body: unknown, status = 200, origin: string | null = null, allowed
   if (origin && allowedOrigins.includes(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
     headers["Access-Control-Allow-Headers"] = "authorization, x-client-info, apikey, content-type";
-    headers["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+    headers["Access-Control-Allow-Methods"] = "POST, GET, DELETE, OPTIONS";
   }
   return new Response(JSON.stringify(body), {
     status,
@@ -54,29 +54,13 @@ Deno.serve(async (req) => {
     if (normalizedOrigin) {
       headers.set("Access-Control-Allow-Origin", normalizedOrigin);
       headers.set("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
-      headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+      headers.set("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS");
     }
     return new Response("ok", { headers });
   }
 
-  if (req.method !== "POST") {
+  if (req.method !== "POST" && req.method !== "GET" && req.method !== "DELETE") {
     return respond({ error: "Method not allowed." }, 405);
-  }
-
-  let body: { message?: string; history?: ChatMessage[] };
-  try {
-    body = await req.json();
-  } catch {
-    return respond({ error: "Invalid request body." }, 400);
-  }
-
-  const message = typeof body.message === "string" ? body.message.trim() : "";
-  const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY_TURNS) : [];
-  if (!message) {
-    return respond({ error: "Message is required." }, 400);
-  }
-  if (message.length > MAX_MESSAGE_CHARS) {
-    return respond({ error: `Please keep your message under ${MAX_MESSAGE_CHARS} characters.` }, 400);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -100,13 +84,51 @@ Deno.serve(async (req) => {
     return respond({ error: "You must be signed in to use the AI Assistant." }, 401);
   }
 
+  const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+  // GET returns the caller's own saved history (so a reload can resume the
+  // conversation); DELETE clears it ("start a new conversation").
+  if (req.method === "GET") {
+    const { data: rows, error: historyError } = await adminClient
+      .from("ai_chat_messages")
+      .select("role, content, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(MAX_HISTORY_TURNS * 2);
+    if (historyError) {
+      return respond({ error: "Something went wrong loading your history. Please try again." }, 500);
+    }
+    return respond({ history: rows ?? [] });
+  }
+  if (req.method === "DELETE") {
+    const { error: deleteError } = await adminClient.from("ai_chat_messages").delete().eq("user_id", user.id);
+    if (deleteError) {
+      return respond({ error: "Something went wrong clearing your history. Please try again." }, 500);
+    }
+    return respond({ ok: true });
+  }
+
+  let body: { message?: string; history?: ChatMessage[] };
+  try {
+    body = await req.json();
+  } catch {
+    return respond({ error: "Invalid request body." }, 400);
+  }
+
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY_TURNS) : [];
+  if (!message) {
+    return respond({ error: "Message is required." }, 400);
+  }
+  if (message.length > MAX_MESSAGE_CHARS) {
+    return respond({ error: `Please keep your message under ${MAX_MESSAGE_CHARS} characters.` }, 400);
+  }
+
   // 2. Per-user rate limiting, using the service-role key (bypasses RLS —
   // this table has no client-facing policies at all, by design). A single
   // atomic RPC — not a separate read then a separate write — so two
   // requests from the same user arriving close together can't both read
   // the same pre-increment count and both slip through the limit.
-  const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
   const { data: hourlyUsage, error: hourlyError } = await adminClient.rpc(
     "reserve_ai_user_hourly_capacity",
     { p_user: user.id, p_limit: RATE_LIMIT_PER_HOUR, p_window_seconds: WINDOW_MS / 1000 },
@@ -197,7 +219,14 @@ Deno.serve(async (req) => {
       return respond({ error: "The AI assistant didn't return a response. Please try again." }, 502);
     }
 
-    return respond({ reply: reply.trim() });
+    const trimmedReply = reply.trim();
+    // Best-effort: a failed save shouldn't fail the reply the user already got.
+    await adminClient.from("ai_chat_messages").insert([
+      { user_id: user.id, role: "user", content: message },
+      { user_id: user.id, role: "model", content: trimmedReply.slice(0, MAX_MESSAGE_CHARS) },
+    ]);
+
+    return respond({ reply: trimmedReply });
   } catch {
     return respond({ error: "Couldn't reach the AI assistant. Please try again shortly." }, 502);
   }
