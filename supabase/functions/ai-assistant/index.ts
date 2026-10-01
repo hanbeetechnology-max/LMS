@@ -101,45 +101,25 @@ Deno.serve(async (req) => {
   }
 
   // 2. Per-user rate limiting, using the service-role key (bypasses RLS —
-  // this table has no client-facing policies at all, by design).
+  // this table has no client-facing policies at all, by design). A single
+  // atomic RPC — not a separate read then a separate write — so two
+  // requests from the same user arriving close together can't both read
+  // the same pre-increment count and both slip through the limit.
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-  const { data: usage, error: usageError } = await adminClient
-    .from("ai_chat_usage")
-    .select("request_count, window_started_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (usageError) {
+  const { data: hourlyUsage, error: hourlyError } = await adminClient.rpc(
+    "reserve_ai_user_hourly_capacity",
+    { p_user: user.id, p_limit: RATE_LIMIT_PER_HOUR, p_window_seconds: WINDOW_MS / 1000 },
+  );
+  if (hourlyError) {
     return respond({ error: "Something went wrong checking your usage. Please try again." }, 500);
   }
-
-  const now = Date.now();
-  const windowStartedAt = usage ? new Date(usage.window_started_at).getTime() : 0;
-  const windowExpired = !usage || now - windowStartedAt > WINDOW_MS;
-
-  if (windowExpired) {
-    const { error: upsertError } = await adminClient
-      .from("ai_chat_usage")
-      .upsert({ user_id: user.id, request_count: 1, window_started_at: new Date(now).toISOString() });
-    if (upsertError) {
-      return respond({ error: "Something went wrong tracking your usage. Please try again." }, 500);
-    }
-  } else {
-    const nextCount = usage.request_count + 1;
-    if (nextCount > RATE_LIMIT_PER_HOUR) {
-      return respond(
-        { error: "You've reached the hourly limit for the AI assistant. Try again in a bit." },
-        429,
-      );
-    }
-    const { error: updateError } = await adminClient
-      .from("ai_chat_usage")
-      .update({ request_count: nextCount })
-      .eq("user_id", user.id);
-    if (updateError) {
-      return respond({ error: "Something went wrong tracking your usage. Please try again." }, 500);
-    }
+  const hourlyRow = Array.isArray(hourlyUsage) ? hourlyUsage[0] : hourlyUsage;
+  if (!hourlyRow?.allowed) {
+    return respond(
+      { error: "You've reached the hourly limit for the AI assistant. Try again in a bit." },
+      429,
+    );
   }
 
   const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
@@ -180,7 +160,7 @@ Deno.serve(async (req) => {
 
   const contents = [
     ...history
-      .filter((m) => m && (m.role === "user" || m.role === "model") && typeof m.content === "string")
+      .filter((m) => m && (m.role === "user" || m.role === "model") && typeof m.content === "string" && m.content.length <= MAX_MESSAGE_CHARS)
       .map((m) => ({ role: m.role, parts: [{ text: m.content }] })),
     { role: "user", parts: [{ text: message }] },
   ];
