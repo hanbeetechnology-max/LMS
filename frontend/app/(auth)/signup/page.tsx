@@ -234,7 +234,9 @@ export default function SignupPage() {
               </div>
               <label className={styles.consentLabel}>
                 <input type="checkbox" checked={guardianConsent} onChange={(event) => setGuardianConsent(event.target.checked)} disabled={submitting} />
-                I confirm I am authorized to submit this school registration and that any required guardian consent has been obtained.
+                I confirm I am authorized to submit this school registration, that I have read the{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</a>, and that any
+                required guardian consent for the students I plan to invite has been obtained.
               </label>
               <p className={styles.applicationNote}>School registrations remain pending until verified by a Hanbee manager.</p>
             </>
