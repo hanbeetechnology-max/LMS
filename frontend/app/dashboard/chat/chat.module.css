@@ -278,3 +278,37 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.daySeparator {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0 8px;
+}
+
+.daySeparator span {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 12px;
+  border: var(--border-subtle);
+}
+
+.systemMessage {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+.tick {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: -2px;
+}
+
+.tickSeen {
+  color: var(--color-primary);
+  font-size: 11px;
+  letter-spacing: -2px;
+}

@@ -44,6 +44,8 @@ async function rpc<T>(name: string, args: Record<string, unknown> = {}) {
 
 export const fetchChatConversations = () => rpc<ChatConversation[]>("chat_conversations");
 export const fetchChatContacts = () => rpc<ChatContact[]>("chat_contacts");
+export const fetchChatReadReceipts = (conversationId: string) =>
+  rpc<{ user_id: string; last_read_at: string | null }[]>("chat_read_receipts", { p_conversation_id: conversationId });
 export const markChatRead = (conversationId: string) => rpc<boolean>("chat_mark_read", { p_conversation_id: conversationId });
 
 const MESSAGE_PAGE_SIZE = 50;

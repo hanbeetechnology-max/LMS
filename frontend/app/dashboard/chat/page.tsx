@@ -15,6 +15,22 @@ import {
   type ChatContact,
 } from "../../../lib/messagingApi";
 import { readStoredSession } from "../../../lib/supabaseAuth";
+import { getRealtimeClient } from "../../../lib/realtime";
+import { fetchChatReadReceipts } from "../../../lib/messagingApi";
+
+function dayKey(value: string) {
+  return new Date(value).toDateString();
+}
+
+function dayLabel(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+}
 
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0] ?? "").join("").toUpperCase();
@@ -57,6 +73,31 @@ export default function ChatPage() {
   // oldest-to-newest, so reverse the page order and flatten for chronological
   // display: [...oldest page ... newest page].
   const messages = [...(messagesQuery.data?.pages ?? [])].reverse().flat();
+
+  const { data: receipts } = useQuery({
+    queryKey: ["chat-receipts", activeConversationId],
+    queryFn: () => fetchChatReadReceipts(activeConversationId),
+    enabled: Boolean(activeConversationId),
+  });
+
+  // Live updates for the open conversation: new messages and other members'
+  // read times. Realtime respects the same row rules as the REST calls.
+  useEffect(() => {
+    if (!activeConversationId) return;
+    const channel = getRealtimeClient()
+      .channel(`chat-${activeConversationId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeConversationId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["chat-messages", activeConversationId] });
+        queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_participants", filter: `conversation_id=eq.${activeConversationId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["chat-receipts", activeConversationId] });
+      })
+      .subscribe();
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
+    };
+  }, [activeConversationId, queryClient]);
 
   const markRead = useMutation({
     mutationFn: markChatRead,
@@ -169,11 +210,24 @@ export default function ChatPage() {
                   </button>
                 </div>
               )}
-              {messages.map((message) => {
-                const mine = message.sender_id === activeContact?.user_id ? false : message.sender_id === currentUserId;
-                return <div key={message.id} className={`${styles.messageWrapper} ${mine ? styles.me : styles.other}`}>
-                  <div className={`${styles.message} ${mine ? styles.me : styles.other}`}>{message.body}</div>
-                  <time className={styles.timestamp} dateTime={message.created_at}>{formatTime(message.created_at)}</time>
+              {messages.map((message, index) => {
+                const previous = messages[index - 1];
+                const newDay = !previous || dayKey(previous.created_at) !== dayKey(message.created_at);
+                const mine = message.sender_id === currentUserId;
+                const seen = mine && (receipts ?? []).some((r) => r.last_read_at && new Date(r.last_read_at) >= new Date(message.created_at));
+                return <div key={message.id}>
+                  {newDay && <div className={styles.daySeparator}><span>{dayLabel(message.created_at)}</span></div>}
+                  {message.kind === "system" ? (
+                    <div className={styles.systemMessage}>{message.body}</div>
+                  ) : (
+                    <div className={`${styles.messageWrapper} ${mine ? styles.me : styles.other}`}>
+                      <div className={`${styles.message} ${mine ? styles.me : styles.other}`}>{message.body}</div>
+                      <time className={styles.timestamp} dateTime={message.created_at}>
+                        {formatTime(message.created_at)}
+                        {mine && <span className={seen ? styles.tickSeen : styles.tick} aria-label={seen ? "Read" : "Sent"}> {seen ? "✓✓" : "✓"}</span>}
+                      </time>
+                    </div>
+                  )}
                 </div>;
               })}
               <div ref={messagesEndRef} />
