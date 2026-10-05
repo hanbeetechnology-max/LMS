@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import styles from "./NotificationBell.module.css";
 import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
+import { getRealtimeClient } from "../../../lib/realtime";
+import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 
 type Notification = {
   id: string;
@@ -39,6 +41,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { data: profile } = useSessionProfile();
 
   const list = useQuery({
     queryKey: LIST_KEY,
@@ -50,6 +53,27 @@ export default function NotificationBell() {
   });
 
   const unread = (list.data ?? []).filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    const channel = getRealtimeClient()
+      .channel(`notifications-${profile.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${profile.id}` },
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          const row = payload.new as { title?: string; body?: string | null };
+          if (typeof Notification !== "undefined" && Notification.permission === "granted" && row.title) {
+            new Notification(row.title, { body: row.body ?? undefined });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void getRealtimeClient().removeChannel(channel);
+    };
+  }, [profile?.id, queryClient]);
 
   useEffect(() => {
     if (!open) return;
@@ -88,7 +112,12 @@ export default function NotificationBell() {
       <button
         type="button"
         className={styles.bellBtn}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (typeof Notification !== "undefined" && Notification.permission === "default") {
+            void Notification.requestPermission();
+          }
+          setOpen((value) => !value);
+        }}
         aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
         aria-expanded={open}
         aria-haspopup="dialog"
