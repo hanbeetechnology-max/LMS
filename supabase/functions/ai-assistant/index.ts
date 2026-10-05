@@ -144,6 +144,21 @@ Deno.serve(async (req) => {
     );
   }
 
+  const perMinuteLimit = Number(Deno.env.get("GEMINI_PER_MINUTE_LIMIT") ?? "");
+  if (Number.isSafeInteger(perMinuteLimit) && perMinuteLimit >= 1) {
+    const { data: minuteUsage, error: minuteError } = await adminClient.rpc(
+      "reserve_ai_user_minute_capacity",
+      { p_user: user.id, p_limit: perMinuteLimit, p_window_seconds: 60 },
+    );
+    if (minuteError) {
+      return respond({ error: "Something went wrong checking your usage. Please try again." }, 500);
+    }
+    const minuteRow = Array.isArray(minuteUsage) ? minuteUsage[0] : minuteUsage;
+    if (!minuteRow?.allowed) {
+      return respond({ error: "You're sending messages too quickly. Wait a minute and try again." }, 429);
+    }
+  }
+
   const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
   if (!geminiApiKey) {
     return respond({ error: "AI Assistant isn't configured yet." }, 500);
