@@ -1,77 +1,97 @@
 :root, [data-theme="dark"] {
-  --bg-page: #23272f;
-  --bg-card: #23272f;
-  --bg-card-hover: #23272f;
-  --bg-input: #23272f;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --accent: #60a5fa;
+  --bg-page: #222222;
+  --bg-card: rgba(20, 20, 20, 0.7);
+  --bg-card-hover: rgba(30, 30, 30, 0.8);
+  --bg-input: rgba(10, 10, 10, 0.6);
+  --text-main: #f5f5f5;
+  --text-muted: #aaaaaa;
+  --accent: #0891b2; /* Cyan */
   
-  /* Classic Dark Neumorphism */
-  --clay-shadow-subtle: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 2px rgba(255, 255, 255, 0.02);
-  --clay-shadow-outer: 3px 3px 8px rgba(0, 0, 0, 0.35), -2px -2px 5px rgba(255, 255, 255, 0.03);
+  --color-primary: #0891b2; /* Muted Cyan */
+  --color-primary-hover: #0e7490; /* Darker Cyan */
+  --color-primary-text: #ffffff;
+  
+  --color-success: #10B981; /* Emerald */
+  --color-warning: #F59E0B; /* Amber */
+  --color-danger: #EF4444; /* Red */
+  
+  /* Classic Dark Neumorphism with Glass */
+  --clay-shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --clay-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.3);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 6px 6px 14px rgba(0, 0, 0, 0.4), -3px -3px 10px rgba(255, 255, 255, 0.04);
-
+  --clay-shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.4);
+  
   /* Buttons and Active States */
-  --clay-shadow-button: 2px 2px 5px rgba(0, 0, 0, 0.35), -1px -1px 3px rgba(255, 255, 255, 0.03);
-  --clay-shadow-active: inset 2px 2px 4px rgba(0, 0, 0, 0.35), inset -1px -1px 3px rgba(255, 255, 255, 0.03);
-
+  --clay-shadow-button: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --clay-shadow-active: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  
   --clay-radius-lg: 32px;
   --clay-radius-md: 24px;
   --clay-radius-sm: 16px;
-
-  --border-subtle: 1px solid rgba(255, 255, 255, 0.06);
+  
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="light"] {
-  --bg-page: #e6ebf2;
-  --bg-card: #e6ebf2;
-  --bg-card-hover: #e6ebf2;
-  --bg-input: #e6ebf2;
-  --text-main: #2d3142;
-  --text-muted: #6b7280;
-  --accent: #3b82f6;
+  --bg-page: #ebe6db;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(255, 255, 255, 0.9);
+  --bg-input: rgba(240, 240, 240, 0.7);
+  --text-main: #111111; /* Strong contrast */
+  --text-muted: #444444; /* High contrast */
+  --accent: #4f46e5; /* Indigo */
   
-  /* Classic Light Neumorphism */
-  --clay-shadow-subtle: 1px 1px 3px rgba(163, 177, 198, 0.2), -1px -1px 3px rgba(255, 255, 255, 0.5);
-  --clay-shadow-outer: 3px 3px 8px rgba(163, 177, 198, 0.3), -3px -3px 7px rgba(255, 255, 255, 0.7);
+  --color-primary: #4f46e5; /* Indigo */
+  --color-primary-hover: #4338ca; /* Darker Indigo */
+  --color-primary-text: #ffffff;
+  
+  --color-success: #059669; /* Emerald */
+  --color-warning: #D97706; /* Amber */
+  --color-danger: #DC2626; /* Red */
+  
+  /* Glass shadows for light mode */
+  --clay-shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --clay-shadow-outer: 0 8px 24px rgba(0, 0, 0, 0.08);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 6px 6px 14px rgba(163, 177, 198, 0.35), -4px -4px 10px rgba(255, 255, 255, 0.8);
-
+  --clay-shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.12);
+  
   /* Buttons and Active States */
-  --clay-shadow-button: 2px 2px 5px rgba(163, 177, 198, 0.35), -1px -1px 4px rgba(255, 255, 255, 0.7);
-  --clay-shadow-active: inset 2px 2px 4px rgba(163, 177, 198, 0.35), inset -1px -1px 3px rgba(255, 255, 255, 0.7);
-
-  --border-subtle: 1px solid rgba(0, 0, 0, 0.06);
+  --clay-shadow-button: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --clay-shadow-active: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="personalized"] {
-  --bg-page: hsl(var(--user-hue, 215), 50%, var(--user-lightness, 85%));
-  --bg-card: hsl(var(--user-hue, 215), 50%, var(--user-lightness, 85%));
-  --bg-card-hover: hsl(var(--user-hue, 215), 50%, calc(var(--user-lightness, 85%) - 3%));
-  --bg-input: hsl(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 5%));
+  /* Static Dark Mode Base */
+  --bg-page: #222222;
+  --bg-card: #222222;
+  --bg-card-hover: #2a2a2a;
+  --bg-input: #1a1a1a;
+  --text-main: #f5f5f5;
+  --text-muted: #999999;
   
-  /* Text flips sharply to dark (15%) when bg is >63%, and light (95%) when bg is <63% */
-  --text-main: hsl(var(--user-hue, 215), 30%, clamp(15%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%));
-  --text-muted: hsla(var(--user-hue, 215), 30%, clamp(15%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%), 0.7);
+  /* Personalized Button Colors */
+  --accent: hsl(var(--user-hue, 215), 80%, var(--user-lightness, 50%));
+  --color-primary: hsl(var(--user-hue, 215), 80%, var(--user-lightness, 50%));
+  --color-primary-hover: hsl(var(--user-hue, 215), 80%, calc(var(--user-lightness, 50%) - 10%));
   
-  /* Accent color flips sharply to bright white-tint (95%) when dark, and strong vibrant dark (20%) when light */
-  --accent: hsl(var(--user-hue, 215), 90%, clamp(20%, calc((var(--user-lightness, 85%) - 63%) * -1000), 95%));
+  /* Text flips to dark when button is light, and light when button is dark */
+  --color-primary-text: hsl(var(--user-hue, 215), 10%, clamp(15%, calc((var(--user-lightness, 50%) - 63%) * -1000), 95%));
   
-  /* Personalized Neumorphism Shadows that adapt to background lightness */
-  --shadow-dark: hsla(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 14%), 0.35);
-  --shadow-light: hsla(var(--user-hue, 215), 50%, calc(var(--user-lightness, 85%) + 13%), 0.6);
-
-  --clay-shadow-subtle: 1px 1px 3px var(--shadow-dark), -1px -1px 3px var(--shadow-light);
-  --clay-shadow-outer: 3px 3px 8px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  /* Static Dark Mode Shadows */
+  --clay-shadow-subtle: 1px 1px 3px rgba(0, 0, 0, 0.2), -1px -1px 2px rgba(255, 255, 255, 0.02);
+  --clay-shadow-outer: 2px 2px 6px rgba(0, 0, 0, 0.3), -1px -1px 4px rgba(255, 255, 255, 0.02);
   --clay-shadow-inner: none;
-  --clay-shadow-elevated: 6px 6px 14px hsla(var(--user-hue, 215), 45%, calc(var(--user-lightness, 85%) - 20%), 0.4), -4px -4px 10px var(--shadow-light);
-
-  --clay-shadow-button: 2px 2px 5px var(--shadow-dark), -1px -1px 4px var(--shadow-light);
-  --clay-shadow-active: inset 2px 2px 4px var(--shadow-dark), inset -1px -1px 3px var(--shadow-light);
-
-  --border-subtle: 1px solid hsla(var(--user-hue, 215), 40%, calc(var(--user-lightness, 85%) - 20%), 0.1);
+  --clay-shadow-elevated: 4px 4px 12px rgba(0, 0, 0, 0.4), -2px -2px 8px rgba(255, 255, 255, 0.03);
+  --clay-shadow-button: 2px 2px 4px rgba(0, 0, 0, 0.3), -1px -1px 2px rgba(255, 255, 255, 0.02);
+  --clay-shadow-active: inset 2px 2px 4px rgba(0, 0, 0, 0.3), inset -1px -1px 2px rgba(255, 255, 255, 0.02);
+  
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.05);
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
 }
 
 /* Base resets */

@@ -5,6 +5,7 @@ import { Search, Menu, X } from "lucide-react";
 import styles from "../layout.module.css";
 import type { AccountProfile } from "../../../lib/supabaseAuth";
 import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
+import NotificationBell from "./NotificationBell";
 
 function roleLabel(role: AccountProfile["role"]) {
   return role.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -42,6 +43,7 @@ export default function Header({ onMenuClick, menuOpen }: { onMenuClick: () => v
       </div>
       <div className={styles.headerRight}>
         <div className={styles.date}>{today}</div>
+        <NotificationBell />
         <div className={styles.headerUser}>
           <div className={styles.avatar}>{initials || "H"}</div>
           <div className={styles.userInfo}>
