@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import styles from "./announcements.module.css";
 import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { useToast } from "../../../components/ui/Toast";
 import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
 import { createAnnouncement, deleteAnnouncement, getAnnouncementAuthors, listAnnouncements, updateAnnouncement, type AnnouncementAudience, type AnnouncementAuthor, type AnnouncementRow } from "../../../lib/announcementsApi";
 
@@ -23,6 +25,8 @@ export default function AnnouncementsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<AnnouncementRow | null>(null);
+  const toast = useToast();
 
   async function load() {
     const rows = await listAnnouncements();
@@ -49,6 +53,16 @@ export default function AnnouncementsPage() {
     void initialize();
     return () => { active = false; };
   }, []);
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete announcement?"
+        message={pendingDelete ? `“${pendingDelete.title}” will be removed for everyone who can see it. This can't be undone.` : ""}
+        confirmLabel="Delete"
+        tone="danger"
+        busy={busy}
+        onConfirm={() => void confirmRemove()}
+        onCancel={() => setPendingDelete(null)}
+      />
 
   useEffect(() => {
     let active = true;
@@ -95,8 +109,10 @@ export default function AnnouncementsPage() {
     setNotice("");
   }
 
-  async function remove(row: AnnouncementRow) {
-    if (!window.confirm(`Delete “${row.title}”?`)) return;
+  async function confirmRemove() {
+    const row = pendingDelete;
+    if (!row) return;
+    setPendingDelete(null);
     setBusy(true);
     setError("");
     setNotice("");
@@ -108,9 +124,9 @@ export default function AnnouncementsPage() {
         setTitle("");
         setBody("");
       }
-      setNotice("Announcement deleted.");
+      toast.success("Announcement deleted.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "We couldn't delete this announcement.");
+      toast.error(reason instanceof Error ? reason.message : "We couldn't delete this announcement.");
     } finally {
       setBusy(false);
     }
@@ -177,7 +193,7 @@ export default function AnnouncementsPage() {
             <div className={styles.content} style={{ whiteSpace: "pre-wrap" }}>{item.body}</div>
             <div className={styles.tags}><span className={styles.tag}>{item.audience === "all" ? "EVERYONE" : item.audience.toUpperCase()}</span><span className={styles.tag}>{item.org_id ? "SCHOOL" : "HANBEE"}</span></div>
             {item.pinned && <div className={styles.pinnedBadge}>Pinned</div>}
-            {canEdit && <div style={{ display: "flex", gap: 8, marginTop: 14 }}><button type="button" disabled={busy} onClick={() => void togglePinned(item)}>{item.pinned ? "Unpin" : "Pin"}</button><button type="button" disabled={busy} onClick={() => beginEdit(item)}>Edit</button><button type="button" disabled={busy} onClick={() => void remove(item)}>Delete</button></div>}
+            {canEdit && <div style={{ display: "flex", gap: 8, marginTop: 14 }}><button type="button" disabled={busy} onClick={() => void togglePinned(item)}>{item.pinned ? "Unpin" : "Pin"}</button><button type="button" disabled={busy} onClick={() => beginEdit(item)}>Edit</button><button type="button" disabled={busy} onClick={() => setPendingDelete(item)}>Delete</button></div>}
           </article>;
         })}
       </div>

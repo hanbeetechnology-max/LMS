@@ -8,6 +8,7 @@ import styles from "./layout.module.css";
 import "./theme.css";
 import { useTheme } from "./ThemeProvider";
 import AuthGate from "../../components/AuthGate";
+import { ToastProvider } from "../../components/ui/Toast";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { activeTheme } = useTheme();
@@ -21,6 +22,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <AuthGate>
+      <ToastProvider>
       <div className={styles.dashboardContainer} data-theme={activeTheme}>
         <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         {mobileNavOpen && (
@@ -36,6 +38,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <main className={styles.contentScroll}>{children}</main>
         </div>
       </div>
+      </ToastProvider>
     </AuthGate>
   );
 }
