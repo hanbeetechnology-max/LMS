@@ -7,6 +7,7 @@ import { ArrowLeft, BookOpen, CheckCircle2, GraduationCap, PauseCircle, PlayCirc
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
 import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
+import { useConfirm } from "../../ui/useConfirm";
 import { fetchSchoolCourseParticipation, fetchSchoolOverview, fetchSchoolStudents, type SchoolCourseRow, type SchoolOverview, type SchoolStudentRow } from "../../../lib/schoolAdminApi";
 import { fetchSchoolTeamOverview, fetchUpcomingTournament, type SchoolTeamOverview, type UpcomingTournament } from "../../../lib/teamFormationApi";
 
@@ -56,6 +57,13 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
     return () => { active = false; };
   }, [profileLoading, profileError, canView, load]);
 
+  const { ask, dialog } = useConfirm();
+
+  async function closeSchool() {
+    if (!(await ask({ title: "Close this school?", message: "Close this school permanently? Active memberships will end.", confirmLabel: "Close school", tone: "danger" }))) return;
+    await act(() => rpc("set_school_status", { p_org: orgId, p_status: "closed", p_reason: "Closed from school detail" }), "School closed.");
+  }
+
   async function act(action: () => Promise<unknown>, success: string) {
     setBusy(true); setError(""); setNotice("");
     try { await action(); setNotice(success); await load(); }
@@ -65,7 +73,7 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
 
   async function changeStudent(student: SchoolStudentRow, action: "suspend" | "revoke" | "restore" | "solo") {
     const messages = { suspend: "Suspend this student's account?", revoke: "Revoke this student's access?", restore: "Restore this student's access?", solo: "End this student's school membership and make them a solo student?" };
-    if (!window.confirm(messages[action])) return;
+    if (!(await ask({ title: "Change this student's access?", message: messages[action], confirmLabel: "Continue", tone: action === "revoke" || action === "suspend" ? "danger" : "primary" }))) return;
     setBusyStudent(student.student_id); setError(""); setNotice("");
     try {
       if (action === "solo") {
@@ -90,6 +98,7 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
 
   return (
     <div>
+      {dialog}
       <header className={styles.pageHeader}>
         <Link href={directoryHref} style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, color: "var(--text-muted)", textDecoration: "none" }}><ArrowLeft size={16} /> All schools</Link>
         <div className={styles.metricLabel}>SCHOOL PROFILE · {school.status.toUpperCase()}</div>
@@ -101,7 +110,7 @@ export default function SchoolDetail({ directoryHref = "/dashboard/manager/schoo
         <div className={styles.sectionHeader} style={{ marginBottom: 0 }}><div><strong>School access</strong><p style={{ color: "var(--text-muted)", marginTop: 5 }}>Status changes are recorded and apply to the whole school.</p></div>
           {!closed && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" disabled={busy} onClick={() => void act(() => rpc("set_school_status", { p_org: orgId, p_status: school.status === "active" ? "suspended" : "active", p_reason: "Updated from school detail" }), school.status === "active" ? "School suspended." : "School reactivated.")}>{school.status === "active" ? <><PauseCircle size={15} /> Suspend school</> : <><PlayCircle size={15} /> Reactivate school</>}</button>
-            <button type="button" disabled={busy} onClick={() => { if (window.confirm("Close this school permanently? Active memberships will end.")) void act(() => rpc("set_school_status", { p_org: orgId, p_status: "closed", p_reason: "Closed from school detail" }), "School closed."); }}>Close school</button>
+            <button type="button" disabled={busy} onClick={() => void closeSchool()}>Close school</button>
           </div>}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { Input, Select } from "../../ui/FormField";
 import Shimmer from "../../ui/Shimmer";
+import { useConfirm } from "../../ui/useConfirm";
 import { authenticatedSupabaseFetch } from "../../../lib/supabaseAuth";
 import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
 import { fetchMyOrganizationId } from "../../../lib/teamFormationApi";
@@ -79,12 +80,14 @@ export default function SchoolSchedule() {
     finally { setSaving(false); }
   }
 
+  const { ask, dialog } = useConfirm();
+
   function canDelete(item: CalendarEvent) {
     return item.owner_id === profile?.id || (Boolean(item.org_id) && item.org_id === organizationId);
   }
 
   async function deleteEvent(item: CalendarEvent) {
-    if (!window.confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    if (!(await ask({ title: "Delete this event?", message: `"${item.title}" will be removed. This can't be undone.`, confirmLabel: "Delete", tone: "danger" }))) return;
     setDeletingId(item.id); setError(""); setNotice("");
     try {
       await authenticatedSupabaseFetch<unknown>(`/rest/v1/calendar_events?id=eq.${encodeURIComponent(item.id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
@@ -94,7 +97,7 @@ export default function SchoolSchedule() {
     finally { setDeletingId(""); }
   }
 
-  return <div>
+  return <div>{dialog}
     <div className={styles.pageHeader}><h1 className={styles.pageTitle}>School Schedule</h1><p className={styles.pageSubtitle}>Plan school events and see your personal calendar together</p></div>
     {error && <p role="alert" style={{ marginBottom: 12 }}>{error}</p>}{notice && <p role="status" style={{ marginBottom: 12 }}>{notice}</p>}
     <form className={styles.sectionCard} onSubmit={createEvent} style={{ marginBottom: 20 }}>

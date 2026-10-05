@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import styles from "../../../app/dashboard/dashboard.module.css";
 import { useSessionProfile } from "../../../lib/hooks/useSessionProfile";
+import { useConfirm } from "../../ui/useConfirm";
 import { listTournamentResults, listTournaments, listVerifiedTournamentTeams, removeTournamentResult, saveTournamentResult, type TournamentRecord, type TournamentResult, type VerifiedTournamentTeam } from "../../../lib/tournamentAdminApi";
 
 export default function TournamentResults() {
@@ -48,6 +49,8 @@ export default function TournamentResults() {
     setNotice("");
   }
 
+  const { ask, dialog } = useConfirm();
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const team = teamById.get(selectedTeamId);
@@ -69,7 +72,7 @@ export default function TournamentResults() {
 
   async function remove(result: TournamentResult) {
     const team = teamById.get(result.team_id);
-    if (!team || !window.confirm(`Delete the result for ${team.name}?`)) return;
+    if (!team || !(await ask({ title: "Delete this result?", message: `The result for ${team.name} will be removed.`, confirmLabel: "Delete", tone: "danger" }))) return;
     setBusy(true); setError(""); setNotice("");
     try {
       await removeTournamentResult({ tournamentId: result.tournament_id, teamId: result.team_id });
@@ -79,7 +82,7 @@ export default function TournamentResults() {
     finally { setBusy(false); }
   }
 
-  return <section style={{ marginTop: 28 }}>
+  return <section style={{ marginTop: 28 }}>{dialog}
     <div className={styles.pageHeader}><h2 className={styles.pageTitle}>Tournament results</h2><p className={styles.pageSubtitle}>Publish rankings for verified teams; students see them on the leaderboard.</p></div>
     {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
     <form className={styles.sectionCard} onSubmit={submit} style={{ marginBottom: 20 }}>

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "../../dashboard.module.css";
 import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
 import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
+import { useConfirm } from "../../../../components/ui/useConfirm";
 
 type Task = { id: string; title: string; description: string; priority: "low" | "medium" | "high"; status: "todo" | "in_progress" | "done"; due_date: string | null; staff_id: string; created_at: string };
 
@@ -37,6 +38,8 @@ export default function ManagerTasksPage() {
     return () => { active = false; };
   }, [profileLoading, profileError, managerId, load]);
 
+  const { ask, dialog } = useConfirm();
+
   async function createTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!managerId) return;
@@ -58,7 +61,7 @@ export default function ManagerTasksPage() {
   }
 
   async function deleteTask(task: Task) {
-    if (!window.confirm(`Delete "${task.title}"? This can't be undone.`)) return;
+    if (!(await ask({ title: "Delete this task?", message: `"${task.title}" will be removed. This can't be undone.`, confirmLabel: "Delete", tone: "danger" }))) return;
     setDeletingId(task.id); setError(""); setMessage("");
     try {
       await authenticatedSupabaseFetch<unknown>(`/rest/v1/staff_tasks?id=eq.${encodeURIComponent(task.id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
@@ -68,6 +71,7 @@ export default function ManagerTasksPage() {
   }
 
   return <div>
+    {dialog}
     <div className={styles.pageHeader}><h1 className={styles.pageTitle}>My Tasks</h1><p className={styles.pageSubtitle}>Your priorities and follow-ups</p></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     <form className={styles.sectionCard} onSubmit={createTask} style={{ marginBottom: 22 }}>

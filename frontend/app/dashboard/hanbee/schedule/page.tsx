@@ -5,6 +5,7 @@ import { authenticatedSupabaseFetch } from "../../../../lib/supabaseAuth";
 import { useSessionProfile } from "../../../../lib/hooks/useSessionProfile";
 import { Input, Select } from "../../../../components/ui/FormField";
 import Shimmer from "../../../../components/ui/Shimmer";
+import { useConfirm } from "../../../../components/ui/useConfirm";
 import styles from "../../dashboard.module.css";
 
 type CalendarEvent = { id: string; title: string; event_type: "class_session" | "office_hours" | "other"; location: string; starts_at: string; ends_at: string; section_id: string | null };
@@ -23,6 +24,8 @@ export default function HanbeeSchedulePage() {
   const [message, setMessage] = useState("");
   const [deletingId, setDeletingId] = useState("");
   const canManage = profile?.role === "staff" || profile?.role === "manager";
+
+  const { ask, dialog } = useConfirm();
 
   async function loadEvents() {
     const rows = await authenticatedSupabaseFetch<CalendarEvent[]>("/rest/v1/calendar_events?select=id,title,event_type,location,starts_at,ends_at,section_id&order=starts_at.asc");
@@ -51,7 +54,7 @@ export default function HanbeeSchedulePage() {
   }
 
   async function deleteEvent(item: CalendarEvent) {
-    if (!window.confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    if (!(await ask({ title: "Delete this event?", message: `"${item.title}" will be removed. This can't be undone.`, confirmLabel: "Delete", tone: "danger" }))) return;
     setDeletingId(item.id); setError(""); setMessage("");
     try {
       await authenticatedSupabaseFetch<unknown>(`/rest/v1/calendar_events?id=eq.${encodeURIComponent(item.id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
@@ -60,7 +63,7 @@ export default function HanbeeSchedulePage() {
     finally { setDeletingId(""); }
   }
 
-  return <div><div className={styles.pageHeader}><h1 className={styles.pageTitle}>Hanbee Schedule</h1><p className={styles.pageSubtitle}>Published classes, office hours, and platform events</p></div>
+  return <div>{dialog}<div className={styles.pageHeader}><h1 className={styles.pageTitle}>Hanbee Schedule</h1><p className={styles.pageSubtitle}>Published classes, office hours, and platform events</p></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {canManage && <form className={styles.sectionCard} onSubmit={createEvent} style={{ marginBottom: 24 }}><h2 className={styles.sectionTitle}>Add an event</h2><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginTop: 16 }}>
       <label>Title<Input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} /></label>
